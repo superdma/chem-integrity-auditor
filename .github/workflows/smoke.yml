@@ -30,9 +30,13 @@ jobs:
           bash tests/smoketest.sh 2>&1 | tee smoke.log
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
-            grep -E '^  FAIL|Traceback|ModuleNotFoundError|ERROR' smoke.log | head -20 | while IFS= read -r line; do
-              echo "::error::$line"
-            done
+            while IFS=: read -r n rest; do
+              start=$((n - 15)); [ "$start" -lt 1 ] && start=1
+              end=$((n + 2))
+              sed -n "${start},${end}p" smoke.log | while IFS= read -r line; do
+                echo "::error::$line"
+              done
+            done < <(grep -n '^  FAIL' smoke.log)
             echo "::error::smoke failed with status $status"
           fi
           exit "$status"
