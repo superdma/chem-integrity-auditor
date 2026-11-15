@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.0 — 2026-11-15
+
+Packaging and methodology ideas from the public
+`cylqwe7855-alt/research-integrity-auditor` project.
+
+### Added
+
+- `package.json` + `bin/install.js` — one-command install
+  (`npx github:superdma/chem-integrity-auditor`), with `--project`,
+  `--skills-dir`, and `--target`. The installer copies the skill payload only;
+  it never installs Python dependencies or writes tokens.
+- `agents/openai.yaml` — display name, short description, and default prompt
+  for generic Agent clients.
+- `references/11-methodology-and-chains.md` — one-page audit order and
+  “anomaly network”: image identity conflicts, reverse-generated values,
+  terminal digits, template trends, author-response pressure tests, and a
+  strong-evidence-chain table. Adapted to chemistry; explicitly attributed.
+- README install method A (npm), structure, and acknowledgement updates.
+
+### Changed
+
+- SKILL Step 7 now asks for an independent second evidence line before
+  escalating above Level 2.
+
 ## 0.4.0 — 2026-11-15
 
 Closes the three gaps recorded in the 0.3.0 gold summary.

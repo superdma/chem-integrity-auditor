@@ -1,0 +1,3 @@
+display_name: Chem Integrity Auditor
+short_description: Evidence-first audit of chemistry and materials papers, from numeric checks to panel/spectrum reuse and a graded report.
+default_prompt: Audit this chemistry paper with chem-integrity-auditor. Build the evidence ledger, run the deterministic numeric, NMR/HRMS and image tracks, pressure-test benign explanations, and write a graded Chinese report. Do not declare fraud; give every finding a resolvable location.

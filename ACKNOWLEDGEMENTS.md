@@ -67,6 +67,12 @@ research-integrity practice, retraction notices, PubPeer discussions, and
 the authors' earlier `integrity-auditor` and `paper-fraud-auditor` skill
 designs. Those are conceptual references, not code dependencies.
 
+The npm one-command installer, the `agents/` manifest, and the one-page
+“anomaly network” checklist were informed by the public
+[research-integrity-auditor](https://github.com/cylqwe7855-alt/research-integrity-auditor)
+project. The installer and the chemistry-specific checklist here were written
+independently; no text or code was copied verbatim.
+
 ## No LLM SDK
 
 This repository contains **no** `anthropic`, `openai`, or other LLM SDK

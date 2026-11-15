@@ -8,7 +8,36 @@
 
 ## 一、把仓库交给 Agent 安装
 
-### 方式 A：直接发链接（推荐）
+### 方式 A：一条命令（npm / npx）
+
+需要 Node.js ≥ 18。默认安装到 `~/.claude/skills/chem-integrity-auditor`：
+
+```bash
+npx github:superdma/chem-integrity-auditor
+```
+
+项目级安装（`./.claude/skills/chem-integrity-auditor`）：
+
+```bash
+npx github:superdma/chem-integrity-auditor --project
+```
+
+自定义目录：
+
+```bash
+npx github:superdma/chem-integrity-auditor --skills-dir /path/to/skills
+# 或直接指定目标目录
+npx github:superdma/chem-integrity-auditor --target /path/to/skill
+```
+
+安装器只复制 skill 载荷，不装 Python 依赖、不写 token。装完按提示执行：
+
+```bash
+python3 -m pip install -r ~/.claude/skills/chem-integrity-auditor/requirements.txt
+python3 ~/.claude/skills/chem-integrity-auditor/scripts/check_env.py
+```
+
+### 方式 B：直接发链接（推荐）
 
 把下面这段原样发给你的 Agent 客户端：
 
@@ -25,7 +54,7 @@
 
 Agent 会自己完成克隆、依赖安装和自检。装好后，直接把论文 PDF 路径或 DOI 发给它即可。
 
-### 方式 B：Claude Code
+### 方式 C：Claude Code
 
 ```bash
 # 个人级（所有项目可用）
@@ -40,7 +69,7 @@ python3 -m pip install -r ~/.claude/skills/chem-integrity-auditor/requirements.t
 python3 ~/.claude/skills/chem-integrity-auditor/scripts/check_env.py
 ```
 
-### 方式 C：Cherry Studio
+### 方式 D：Cherry Studio
 
 把仓库放到 Cherry Studio 的 Skills 目录，或在「设置 → Skills / 技能」中导入该目录：
 
@@ -60,7 +89,7 @@ git clone https://github.com/superdma/chem-integrity-auditor.git `
 
 目录名可以随意，但必须保证 `chem-integrity-auditor/SKILL.md` 在目录根。重启或刷新 Skills 列表后，在对话里说“用 chem-integrity-auditor 审计这篇论文”。
 
-### 方式 D：手动下载 ZIP
+### 方式 E：手动下载 ZIP
 
 1. 打开 <https://github.com/superdma/chem-integrity-auditor> → **Code → Download ZIP**。
 2. 解压到客户端的 skills 目录，确保 `SKILL.md` 位于解压目录根（不要多套一层文件夹）。
@@ -213,9 +242,12 @@ python3 scripts/report_gate.py output/.../audit_report.md \
 
 ```text
 SKILL.md                 # skill 合同与 8 步流水线
-references/00-09         # 增量执行、采集、技术目录、数值/图像/逻辑/分级、结构、参考谱、MinerU
+agents/openai.yaml       # 通用 Agent 客户端的显示名/默认提示词
+references/00-11         # 增量执行、采集、技术目录、数值/图像/逻辑/分级、结构、参考谱、MinerU、图库/质量门、方法论
 scripts/                 # 确定性脚本（无 LLM SDK）
 templates/               # 中文 audit_report 模板
+bin/install.js           # npm/npx 一条命令安装器（不装依赖、不写 token）
+package.json             # npm 包清单（files 白名单）
 tests/                   # 生成式 fixtures + smoke + MinerU mock + gold set
 .github/workflows/       # CI smoke
 ACKNOWLEDGEMENTS.md      # 第三方依赖、数据源、算法引用与许可证

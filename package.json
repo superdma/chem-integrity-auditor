@@ -1,0 +1,37 @@
+{
+  "name": "chem-integrity-auditor",
+  "version": "0.5.0",
+  "description": "One-command installer for the Chem Integrity Auditor skill.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/superdma/chem-integrity-auditor.git"
+  },
+  "bin": {
+    "chem-integrity-auditor": "bin/install.js"
+  },
+  "files": [
+    "SKILL.md",
+    "agents/",
+    "references/",
+    "scripts/",
+    "templates/",
+    "bin/",
+    "requirements.txt",
+    "README.md",
+    "CHANGELOG.md",
+    "ACKNOWLEDGEMENTS.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "claude-code",
+    "skill",
+    "research-integrity",
+    "chemistry",
+    "paper-audit",
+    "mineru"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

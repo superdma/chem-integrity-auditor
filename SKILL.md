@@ -61,6 +61,7 @@ Read the relevant reference **before** executing its track, not after.
 | `references/05-logic-track.md` | logical playbook: chemistry claim chains (synthesis→purity→structure→performance), missing controls, characterization-vs-claim mismatches, domain plausibility |
 | `references/06-grading-report.md` | Level 1–4 grading, finding file format, quality gate, Chinese report assembly |
 | `references/10-corpus-and-gate.md` | cross-publication corpus workflow (manual export, `corpus_add`/`corpus_match`, hit interpretation) and the executable `report_gate.py` contract |
+| `references/11-methodology-and-chains.md` | one-page audit order and “anomaly network”: image identity conflicts, reverse-generated values, terminal digits, template trends, author-response pressure tests, strong evidence chains |
 
 ## Scripts
 
@@ -285,6 +286,12 @@ recompute, re-extract at higher DPI, check the SI. An explanation that
 survives → downgrade or drop; one that breaks → keep, and record the
 pressure test in the finding file (the report's credibility comes from
 having tried to kill the finding).
+
+Then look for an **anomaly network** (`references/11-methodology-and-chains.md`):
+does the same data carry an independent second signal (image reuse + label
+conflict, repeated values + fixed ratio, shared noise + incompatible peak
+shape)? One line stays at Level 2; independent lines that agree can reach
+Level 3–4. dHash/ORB/noise on the same image are not independent lines.
 
 ### Step 8 — Grade, report, quality gate
 
