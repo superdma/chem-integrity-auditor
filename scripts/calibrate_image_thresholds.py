@@ -73,11 +73,14 @@ def roc_curve(scores: list[float], labels: list[int]):
         thresholds.append(float(score))
         tpr.append(tp / positives)
         fpr.append(fp_count / negatives)
-    # AUC via trapezoid on the ROC points (including origin).
+    # AUC via trapezoid on the ROC points (including origin). Implement it
+    # directly: np.trapz was renamed to np.trapezoid in newer NumPy.
     xs = [0.0] + fpr
     ys = [0.0] + tpr
-    auc = float(np.trapz(ys, xs))
-    return thresholds, tpr, fpr, auc
+    auc = 0.0
+    for i in range(1, len(xs)):
+        auc += (xs[i] - xs[i - 1]) * (ys[i] + ys[i - 1]) / 2.0
+    return thresholds, tpr, fpr, float(auc)
 
 
 def best_threshold(scores, labels):
