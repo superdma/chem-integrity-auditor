@@ -8,8 +8,9 @@ Follow-up to the comparison with
 ### Changed
 
 - `render_evidence_tables.py` imports `openpyxl` lazily with an actionable
-  install message, and falls back across Linux CJK / macOS / DejaVu fonts
-  instead of macOS-only paths.
+  install message, falls back across Linux CJK / macOS / DejaVu fonts instead
+  of macOS-only paths, and uses Pillow < 8 text/box fallbacks. Verified under
+  Pillow 7.0 and Pillow 10.4.
 - `check_env.py` reports `openpyxl` as optional; README documents it for
   XLSX table evidence cards.
 - `ACKNOWLEDGEMENTS.md` records that `numeric_forensics.py` and

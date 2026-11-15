@@ -112,8 +112,17 @@ def terminal_digit(v):
 
 
 def text_size(draw, text, font):
-    box = draw.textbbox((0, 0), text, font=font)
-    return box[2] - box[0], box[3] - box[1]
+    if hasattr(draw, "textbbox"):
+        box = draw.textbbox((0, 0), text, font=font)
+        return box[2] - box[0], box[3] - box[1]
+    return draw.textsize(text, font=font)  # Pillow < 8
+
+
+def rounded_box(draw, box, radius, **kwargs):
+    if hasattr(draw, "rounded_rectangle"):
+        draw.rounded_rectangle(box, radius=radius, **kwargs)
+    else:  # Pillow < 8.2
+        draw.rectangle(box, **kwargs)
 
 
 def draw_wrapped(draw, text, xy, width, font, fill, line_gap=5):
@@ -203,7 +212,8 @@ def render_finding(finding, xlsx_root, output_dir, index, max_rows=42):
     draw.text((left, 70), subtitle, font=FONT["subtitle"], fill=PALETTE["muted"])
 
     # Table background.
-    draw.rounded_rectangle(
+    rounded_box(
+        draw,
         (left, top, left + table_w, top + table_h),
         radius=8,
         fill=PALETTE["paper"],
@@ -252,7 +262,7 @@ def render_finding(finding, xlsx_root, output_dir, index, max_rows=42):
     # Annotation panel.
     note_x = left + table_w + 30
     note_y = top
-    draw.rounded_rectangle((note_x, note_y, note_x + note_w, note_y + 360), radius=8, fill=PALETTE["paper"], outline=PALETTE["grid"])
+    rounded_box(draw, (note_x, note_y, note_x + note_w, note_y + 360), radius=8, fill=PALETTE["paper"], outline=PALETTE["grid"])
     draw.text((note_x + 20, note_y + 20), "Risk annotation", font=FONT["subtitle"], fill=PALETTE["danger"])
     y = note_y + 58
     y = draw_wrapped(draw, evidence_note(finding), (note_x + 20, y), note_w - 40, FONT["body"], PALETTE["text"])
