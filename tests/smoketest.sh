@@ -416,6 +416,26 @@ then ok "duplicate pair gets RANSAC inliers + bbox; unrelated pair is silent"
 else bad "ORB geometry report invalid"; fi
 
 echo
+echo "== 24. NMR / HRMS isotope checks =="
+python3 "$SCRIPTS/nmr_hrms_numeric.py" "$FIX/nmr" --output "$TMP/nmr_ok.json" >/dev/null 2>&1
+python3 "$SCRIPTS/nmr_hrms_numeric.py" "$FIX/nmr_invalid" --output "$TMP/nmr_bad.json" >/dev/null 2>&1
+if python3 - "$TMP" <<'PYTEST'
+import json, sys, pathlib
+p = pathlib.Path(sys.argv[1])
+ok = json.load(open(p / "nmr_ok.json"))
+bad = json.load(open(p / "nmr_bad.json"))
+assert ok["findings_count"] == 0, ok["findings"]
+checks = {f["check"] for f in bad["findings"]}
+assert "nmr_integration_noninteger" in checks, checks
+assert "nmr_13c_count_exceeds_formula" in checks, checks
+assert "nmr_13c_impossible_shift" in checks, checks
+assert "hrms_rdbe_negative" in checks, checks
+assert "hrms_isotope_intensity" in checks, checks
+PYTEST
+then ok "valid NMR silent; invalid integrations/13C/HRMS fire"
+else bad "NMR/HRMS checker thresholds wrong"; fi
+
+echo
 echo "======================================"
 echo "PASS $PASS   FAIL $FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

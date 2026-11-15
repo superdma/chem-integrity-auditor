@@ -70,6 +70,7 @@ Read the relevant reference **before** executing its track, not after.
 | `scripts/build_evidence_ledger.py` | MinerU workdir → `evidence_ledger.json` (text/table/figure/caption provenance index) |
 | `scripts/numeric_forensics.py` | generic numeric leads: exact duplicates, repeated decimals, terminal digits, Benford (applicability-gated) |
 | `scripts/chem_numeric.py` | chemistry-specific numeric leads: yield roundness, conversion×selectivity, area% sums, CHN vs formula, HRMS vs formula MW, Scherrer consistency, identical replicates, impossible unit ranges, neat decimals, fixed-offset rows — each with line-level provenance + candidate benign explanation |
+| `scripts/nmr_hrms_numeric.py` | NMR/HRMS-specific leads: 1H integration non-integer/sum vs formula H, 13C signal count vs formula C, impossible/duplicate 13C shifts, RDBE, nitrogen rule, reported M+1/M+2 vs natural-abundance isotope pattern |
 | `scripts/structure_check.py` | PubChem identity check: name/SMILES/CAS/InChIKey/formula → CID, then formula / MW / exact mass (HRMS adducts) / CHN Calcd+Found / CAS / novelty comparisons; cached, offline-capable, RDKit cross-check |
 | `scripts/panel_split.py` | split multi-panel figure PNGs into individual panel PNGs |
 | `scripts/stack_split.py` | split **stacked traces** (2–4 spectra separated by full-width black rules) into one image per trace, with optional colour isolation (red/blue/green) so ORB/fingerprint compare curves, not legends |
@@ -178,6 +179,7 @@ Open `references/03-numeric-track.md`. Run both scripts:
 
 ```bash
 python3 <skill>/scripts/chem_numeric.py "$RUN/workdir" --output "$RUN/workdir/chem_numeric.json"
+python3 <skill>/scripts/nmr_hrms_numeric.py "$RUN/workdir" --output "$RUN/workdir/nmr_hrms.json"
 python3 <skill>/scripts/numeric_forensics.py "$RUN/workdir" --output "$RUN/workdir/numeric_forensics.json"
 ```
 

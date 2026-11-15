@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.3.0 — 2026-11-15
+
+Gold-set batch: five real retraction notices, NMR/HRMS checks, and stacked-trace
+support.
+
+### Added
+
+- `scripts/nmr_hrms_numeric.py` — 1H integration, 13C signal count vs formula,
+  impossible/duplicate shifts, RDBE, nitrogen rule, and natural-abundance
+  M+1/M+2 isotope comparison.
+- `tests/gold/` — manifest, `run_paper.py`, `summarize_run.py`, per-paper
+  checklists and `gold_summary.md`; five retracted OA papers, 13 notice
+  charges, per-charge outcomes.
+- `README.md` installation-by-link section (agent prompt, Claude Code,
+  Cherry Studio, ZIP) and `ACKNOWLEDGEMENTS.md`; MIT `LICENSE`.
+- Smoke coverage for NMR/HRMS (59 checks total).
+
+### Changed
+
+- `panel_split.py` recognises a full-width equally spaced stack as one panel,
+  so stacked Raman/XRD traces are no longer miscounted as separate panels.
+- `run_paper.py` splits each panel with `stack_split.py --keep-color auto`,
+  compares isolated traces, and never compares a band with its parent panel.
+- `spectral_segment_dup.py` skips low-contrast patches and a wider overlap
+  neighbourhood; this removed flat-baseline false positives while keeping
+  genuine periodic hits.
+
+### Measured
+
+- Gold-set recall: 2/13 charges fully reproduced, 3/13 partial, 3/13 not
+  reproduced, 5/13 untestable cross-publication claims. Details in
+  `tests/gold/gold_summary.md`.
+- Real MinerU cloud v4 (`pipeline`) run on the 1-page mock PDF succeeded;
+  token came from a temporary 0600 env file and was deleted afterwards.
+- Smoke suite: 59 pass, 0 fail.
+
 ## 0.2.0 — 2026-11-15
 
 Optimization batch after the `d5ra01695a` end-to-end audit.

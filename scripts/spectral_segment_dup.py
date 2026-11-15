@@ -111,12 +111,15 @@ def patch_matches(gray: np.ndarray, box, *, window: int, step: int,
     best = []
     for sx in range(0, sub.shape[1] - window, max(1, step)):
         template = sub[:, sx:sx + window]
-        if template.std() < 1e-6:
+        # Flat baseline patches match their neighbours trivially; they carry
+        # no copy evidence, so skip low-contrast templates.
+        if template.std() < 5.0:
             continue
         result = cv2.matchTemplate(sub, template, cv2.TM_CCOEFF_NORMED)
-        # Exclude overlapping positions (and their immediate neighbourhood).
-        left = max(0, sx - window)
-        right = min(result.shape[1], sx + window)
+        # Exclude the patch and a wide neighbourhood: adjacent windows of the
+        # same smooth curve correlate by construction.
+        left = max(0, sx - 2 * window)
+        right = min(result.shape[1], sx + 2 * window)
         result[:, left:right] = -1.0
         _, score, _, loc = cv2.minMaxLoc(result)
         if score >= min_score:
@@ -144,7 +147,7 @@ def patch_matches_between(gray_a: np.ndarray, box_a,
     best = []
     for sx in range(0, sub_a.shape[1] - window, max(1, step)):
         template = sub_a[:, sx:sx + window]
-        if template.std() < 1e-6:
+        if template.std() < 5.0:
             continue
         result = cv2.matchTemplate(sub_b, template, cv2.TM_CCOEFF_NORMED)
         _, score, _, loc = cv2.minMaxLoc(result)

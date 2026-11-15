@@ -125,6 +125,29 @@ def make_calibration_manifest():
                                      encoding="utf-8")
 
 
+def make_nmr_fixtures():
+    """Valid/invalid inline NMR + HRMS text for nmr_hrms_numeric.py."""
+    valid = ensure("nmr")
+    (valid / "full.md").write_text("""# Results
+
+Compound 5a (C10H12O2).
+
+1H NMR (400 MHz, CDCl3) δ 7.26 (d, J = 8.0 Hz, 2H), 6.85 (d, J = 8.0 Hz, 2H), 4.12 (q, J = 7.0 Hz, 2H), 2.35 (s, 3H), 1.25 (t, J = 7.0 Hz, 3H).
+13C NMR (100 MHz, CDCl3) δ 170.2, 154.3, 130.1, 127.6, 114.2, 60.4, 20.8, 14.3.
+HRMS (ESI) m/z calcd for C10H12O2 [M+H]+ 165.0910, found 165.0913.
+""", encoding="utf-8")
+
+    invalid = ensure("nmr_invalid")
+    (invalid / "full.md").write_text("""# Results
+
+Compound X (C8H8O2).
+
+1H NMR (400 MHz, CDCl3) δ 7.26 (s, 2.37H), 3.34 (m, 3.34H), 1.08 (t, 1.08H).
+13C NMR (100 MHz, CDCl3) δ 320.0, 170.2, 154.3, 130.1, 127.6, 114.2, 60.4, 20.8, 14.3, 10.1.
+HRMS (ESI) m/z calcd for C2H10 [M+H]+ 31.0780, found 31.0783; M+1 = 35%.
+""", encoding="utf-8")
+
+
 # --------------------------------------------------------------------------
 # generic images (phash / ORB / noise fingerprint)
 # --------------------------------------------------------------------------
@@ -305,6 +328,7 @@ def main():
     make_segment_fixtures()
     make_images()
     make_calibration_manifest()
+    make_nmr_fixtures()
     make_panel_figure()
     make_numeric()
     make_mineru_fixture()

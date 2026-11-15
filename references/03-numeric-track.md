@@ -150,3 +150,30 @@ graded, unless they corroborate another line.
 - Cross-track notes: numeric findings that reference a figure (e.g., "text
   Rct ≠ figure arc") belong here with the figure pointer, not in the image
   track — the image track is for *pixel-level* evidence only.
+
+
+## NMR / HRMS isotope sub-track (`nmr_hrms_numeric.py`)
+
+Run alongside `chem_numeric.py`:
+
+```bash
+python3 <skill>/scripts/nmr_hrms_numeric.py "$RUN/workdir" \
+    --output "$RUN/workdir/nmr_hrms.json"
+```
+
+Checks:
+
+| Check | Severity | Benign explanation to test |
+|---|---|---|
+| 1H integration not near integer/0.5 H | soft | exchangeable proton, overlap, integration normalized to a subset |
+| sum of 1H integrals ≠ formula H | soft | partial/subset normalization, omitted exchangeable H, solvent/impurity |
+| 13C signals > formula C (solvent peaks removed) | hard | unlisted impurity/solvent, formula typo |
+| 13C shift > 250 or < -10 ppm | hard | paramagnetic complex, wrong nucleus label, typo |
+| duplicate 13C shift | soft | genuine overlap or copy/typo |
+| RDBE < 0 | hard | formula typo, ion/radical, salt component |
+| nitrogen-rule parity mismatch | soft | salt/ion, isotope label, formula typo |
+| reported M+1/M+2 vs natural abundance | soft | isotope label, different adduct/charge, peak-picking artifact |
+
+The parser is line-based and tolerant; it is not a structure elucidation
+engine. Always open the cited line and check whether the formula belongs to
+the same compound before grading.

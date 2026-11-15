@@ -193,6 +193,34 @@ def _frame_lines(gray: np.ndarray, axis: int, *, dark_thresh: int,
     ]
 
 
+def _is_stacked_spectra(gray: np.ndarray, lines, *,
+                        frame_dark_thresh: int) -> bool:
+    """True for full-width, equally tall stacked traces (one panel, N traces).
+
+    A 3-trace Raman/XRD stack has 4 full-width rules (top, 2 dividers,
+    bottom), no internal vertical rules, and bands of equal height. Treating
+    the dividers as panel boundaries both miscounts the panels and hides the
+    between-trace comparison, so these figures are handed to `stack_split.py`
+    instead. A multi-panel grid has internal vertical rules and is excluded.
+    """
+    full = [line for line in lines if line["run_frac"] >= 0.85]
+    if len(full) < 2:
+        return False
+    width = gray.shape[1]
+    internal_cols = [line for line in _frame_lines(
+        gray, 1, dark_thresh=frame_dark_thresh, min_len_frac=0.50)
+        if 0.10 * width < line["pos"] < 0.90 * width]
+    if internal_cols:
+        return False
+    heights = [b - a for a, b in zip([line["pos"] for line in full],
+                                     [line["pos"] for line in full][1:])]
+    heights = [h for h in heights if h >= 20]
+    if len(heights) < 2:
+        return False
+    mean = sum(heights) / len(heights)
+    return all(abs(h - mean) <= 0.25 * mean for h in heights)
+
+
 def _frame_row_bands(gray: np.ndarray, *, dark_thresh: int,
                      min_len_frac: float, min_panel_px: int,
                      min_panel_frac: float, frame_dark_thresh: int = 160):
@@ -208,6 +236,8 @@ def _frame_row_bands(gray: np.ndarray, *, dark_thresh: int,
     lines = _frame_lines(gray, 0, dark_thresh=frame_dark_thresh,
                          min_len_frac=min_len_frac)
     lines = [line for line in lines if line["run_frac"] >= min_len_frac]
+    if _is_stacked_spectra(gray, lines, frame_dark_thresh=frame_dark_thresh):
+        return []
     if len(lines) < 2 or len(lines) % 2 != 0:
         return []
     min_panel = max(min_panel_px, int(round(min_panel_frac * gray.shape[0])))

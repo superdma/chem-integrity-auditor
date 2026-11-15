@@ -1,0 +1,63 @@
+{
+  "version": "1.0",
+  "description": "Five open-access retracted chemistry/materials papers used to measure per-charge recall. Run each through the full pipeline; compare findings against the notice checklist.",
+  "papers": [
+    {
+      "id": "d5ra01695a",
+      "doi": "10.1039/d5ra01695a",
+      "pmcid": "PMC12169214",
+      "notice_pmcid": "PMC13572973",
+      "technique_focus": ["Raman", "XRD", "SEM", "electrochemistry"],
+      "charges": [
+        "Raman spectra contain data that appear to have been copied/duplicated within the spectra",
+        "Fig. 2 red and blue traces are not independent measurements"
+      ]
+    },
+    {
+      "id": "d2ra07661f",
+      "doi": "10.1039/d2ra07661f",
+      "pmcid": "PMC10015629",
+      "notice_pmcid": "PMC13746196",
+      "technique_focus": ["XRD", "SEM", "electrochemistry"],
+      "charges": [
+        "XRD data in Fig. 1 contain features inconsistent with genuine experimental XRD measurements",
+        "raw-data explanation did not survive independent expert review"
+      ]
+    },
+    {
+      "id": "d2na00842d",
+      "doi": "10.1039/d2na00842d",
+      "pmcid": "PMC9972855",
+      "notice_pmcid": "PMC13591313",
+      "technique_focus": ["XRD", "Raman", "EDX", "SEM"],
+      "charges": [
+        "XRD patterns and Raman data in Fig. 1, and EDX data in Fig. 3, were first published by different authors",
+        "SEM data in Fig. 2b is partially identical to prior data and shows signs of editing"
+      ]
+    },
+    {
+      "id": "d4na00372a",
+      "doi": "10.1039/d4na00372a",
+      "pmcid": "PMC11342160",
+      "notice_pmcid": "PMC13426055",
+      "technique_focus": ["FESEM", "EDX"],
+      "charges": [
+        "FESEM data in Fig. 3e was first published as another material",
+        "EDX data in Fig. 4b contains unexpected repeating patterns",
+        "sections of Fig. 4a/c and Fig. 4b/c show unexpected similarity"
+      ]
+    },
+    {
+      "id": "d0ra09390d",
+      "doi": "10.1039/d0ra09390d",
+      "pmcid": "PMC9043585",
+      "notice_pmcid": "PMC13392989",
+      "technique_focus": ["FTIR", "XRD", "photocatalysis"],
+      "charges": [
+        "FTIR spectra in Fig. 5 were first published in a different experiment",
+        "XRD patterns for 0NZO-30-SCN and 4NZO in Fig. 2 are partially identical",
+        "XRD patterns for 4NZO-30-SCN before/after reaction in Fig. 8b are partially identical"
+      ]
+    }
+  ]
+}
