@@ -12,9 +12,13 @@ import re
 from pathlib import Path
 from textwrap import wrap
 
-import openpyxl
-from openpyxl.utils.cell import column_index_from_string, get_column_letter
 from PIL import Image, ImageDraw, ImageFont
+
+# openpyxl is optional: imported in main() so --help and compile checks work
+# without it. Only XLSX-backed evidence cards need this dependency.
+openpyxl = None
+column_index_from_string = None
+get_column_letter = None
 
 
 PALETTE = {
@@ -32,15 +36,25 @@ PALETTE = {
 
 
 def load_font(size, bold=False):
-    candidates = [
+    regular = [
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf",
+        "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
         "/System/Library/Fonts/PingFang.ttc",
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/Library/Fonts/Arial Unicode.ttf",
     ]
-    for path in candidates:
+    bold_fonts = [
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+        "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Bold.otf",
+        "/System/Library/Fonts/PingFang.ttc",
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    ]
+    for path in (bold_fonts if bold else regular):
         try:
-            return ImageFont.truetype(path, size=size, index=1 if bold else 0)
+            return ImageFont.truetype(path, size=size)
         except Exception:
             continue
     return ImageFont.load_default()
@@ -256,6 +270,25 @@ def render_finding(finding, xlsx_root, output_dir, index, max_rows=42):
     return path
 
 
+def require_openpyxl():
+    """Import openpyxl late and fail with an actionable message."""
+    global openpyxl, column_index_from_string, get_column_letter
+    try:
+        import openpyxl as _openpyxl
+        from openpyxl.utils.cell import (
+            column_index_from_string as _column_index_from_string,
+            get_column_letter as _get_column_letter,
+        )
+    except ImportError:
+        raise SystemExit(
+            "render_evidence_tables.py needs openpyxl for XLSX cells; "
+            "install it with: python3 -m pip install openpyxl"
+        )
+    openpyxl = _openpyxl
+    column_index_from_string = _column_index_from_string
+    get_column_letter = _get_column_letter
+
+
 def main():
     parser = argparse.ArgumentParser(description="Render annotated source-data evidence PNGs.")
     parser.add_argument("--audit-json", required=True, help="Audit JSON containing terminal_findings/fixed_difference_findings.")
@@ -265,6 +298,7 @@ def main():
     parser.add_argument("--top-terminal", type=int, default=8)
     parser.add_argument("--max-rows", type=int, default=42)
     args = parser.parse_args()
+    require_openpyxl()
 
     audit = json.loads(Path(args.audit_json).read_text(encoding="utf-8"))
     xlsx_root = Path(args.xlsx_root)

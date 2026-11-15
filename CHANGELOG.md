@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.1 — 2026-11-15
+
+Follow-up to the comparison with
+`cylqwe7855-alt/research-integrity-auditor`.
+
+### Changed
+
+- `render_evidence_tables.py` imports `openpyxl` lazily with an actionable
+  install message, and falls back across Linux CJK / macOS / DejaVu fonts
+  instead of macOS-only paths.
+- `check_env.py` reports `openpyxl` as optional; README documents it for
+  XLSX table evidence cards.
+- `ACKNOWLEDGEMENTS.md` records that `numeric_forensics.py` and
+  `render_evidence_tables.py` also exist byte-for-byte in the public
+  comparison project, from the shared `paper-fraud-auditor` lineage.
+
 ## 0.5.0 — 2026-11-15
 
 Packaging and methodology ideas from the public

@@ -17,6 +17,7 @@ or inaccurate, please open an issue.
 | **OpenCV** | ORB features, template matching, RANSAC homography | Apache-2.0 | <https://opencv.org/> |
 | **SciPy** | optional statistical/signal helpers | BSD-3-Clause | <https://scipy.org/> |
 | **RDKit** | optional structure/formula cross-check | BSD-3-Clause | <https://www.rdkit.org/> |
+| **openpyxl** | optional XLSX cell-level evidence cards | MIT | <https://openpyxl.readthedocs.io/> |
 
 No source code from these projects is vendored into this repository; they are
 imported as libraries. Their licenses apply to their own code.
@@ -71,7 +72,13 @@ The npm one-command installer, the `agents/` manifest, and the one-page
 “anomaly network” checklist were informed by the public
 [research-integrity-auditor](https://github.com/cylqwe7855-alt/research-integrity-auditor)
 project. The installer and the chemistry-specific checklist here were written
-independently; no text or code was copied verbatim.
+independently.
+
+Two scripts, `scripts/numeric_forensics.py` and
+`scripts/render_evidence_tables.py`, also exist byte-for-byte in that public
+project. They come from the authors' shared `paper-fraud-auditor` lineage
+rather than from the 0.5.0 comparison; both repositories are MIT-licensed.
+They are recorded here for transparency.
 
 ## No LLM SDK
 

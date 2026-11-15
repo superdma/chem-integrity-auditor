@@ -1,6 +1,6 @@
 {
   "name": "chem-integrity-auditor",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "One-command installer for the Chem Integrity Auditor skill.",
   "license": "MIT",
   "repository": {

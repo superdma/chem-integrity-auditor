@@ -110,7 +110,7 @@ bash tests/smoketest.sh                # 必须 0 failures
 ```
 
 - Python 3.8+；Pillow、NumPy、OpenCV、SciPy。
-- RDKit 可选（结构与分子式交叉校验）。
+- RDKit 可选（结构与分子式交叉校验）；openpyxl 可选（XLSX 表格证据图，`pip install openpyxl`）。
 - **MinerU 可选**：只在 PDF/DOI 路线的正文与 SI 解析时需要；PMC 路线用 `pmc_fetch.py`，不需要 MinerU。本地 4.x / 2.x–3.x 与官方云 v4 都支持，见 `references/09-mineru-setup.md`。
 - Token 只从环境变量读取（`MINERU_API_TOKEN` / `MINERU_API_KEY`），不会写进仓库、报告或 manifest。
 
@@ -161,7 +161,9 @@ cd <skills>/chem-integrity-auditor && git pull
 | `pmc_fetch.py` | PMC 全文 XML + 原始 figure 文件 → `full.md` |
 | `build_evidence_ledger.py` | 文本/HTML 表/图/caption 的 cell 级 provenance 索引 |
 | `chem_numeric.py` | 化学数值异常线索 |
+| `numeric_forensics.py` | 通用数值取证：完全重复、重复小数尾、末位数字、Benford 适用性门控 |
 | `nmr_hrms_numeric.py` | NMR 积分/13C 峰数/HRMS 同位素与 RDBE 线索 |
+| `render_evidence_tables.py` | 可选：从原始 XLSX 单元格生成带高亮的表格证据 PNG |
 | `structure_check.py` | PubChem 结构身份核验（离线缓存） |
 | `panel_split.py` | 多线索面板切分（白沟 / 框架线 / 内容带） |
 | `stack_split.py` | 按全宽分隔线切 stacked traces |
@@ -224,6 +226,7 @@ python3 scripts/report_gate.py output/.../audit_report.md \
 | [OpenCV](https://opencv.org/) | ORB、模板匹配、RANSAC | Apache-2.0 |
 | [SciPy](https://scipy.org/) | 可选统计/信号辅助 | BSD-3-Clause |
 | [RDKit](https://www.rdkit.org/) | 可选结构/分子式校验 | BSD-3-Clause |
+| [openpyxl](https://openpyxl.readthedocs.io/) | 可选：XLSX 表格证据图 | MIT |
 | [Poppler](https://poppler.freedesktop.org/) | `pdftoppm` / `pdfimages` / `pdftotext` | GPL-2.0（独立可执行程序） |
 | [MinerU](https://github.com/opendatalab/MinerU) | 可选 PDF → Markdown | AGPL-3.0（以仓库为准） |
 | [PubChem PUG REST](https://pubchem.ncbi.nlm.nih.gov/) | 化合物身份核验 | NCBI 数据使用条款 |

@@ -88,9 +88,10 @@ Read the relevant reference **before** executing its track, not after.
 | `scripts/reference_spectrum_match.py` | digitize a spectrum panel (2-point axis calibration) or read a peak table, then match against SDBS/NMRShiftDB peak lists with tolerance + recall/precision scoring; semi-automatic copied-database-spectrum check |
 | `scripts/render_evidence_tables.py` | deterministic annotated PNG evidence cards for high-risk table findings |
 
-All scripts are stdlib, Pillow/NumPy/OpenCV, with SciPy optional. The only
-network access is PubChem PUG REST in `structure_check.py` (cached,
-`--offline` supported); there is no LLM SDK anywhere. Python 3.8+.
+All scripts are stdlib, Pillow/NumPy/OpenCV, with SciPy optional; the XLSX
+evidence-card script also needs `openpyxl`. The only network access is
+PubChem PUG REST in `structure_check.py` (cached, `--offline` supported);
+there is no LLM SDK anywhere. Python 3.8+.
 
 ## Pipeline
 

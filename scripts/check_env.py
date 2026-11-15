@@ -24,7 +24,7 @@ import sys
 REQUIRED_PY = (3, 8)
 REQUIRED_PACKAGES = ("PIL", "numpy")
 RECOMMENDED_PACKAGES = ("cv2", "scipy")
-OPTIONAL_PACKAGES = ("rdkit",)
+OPTIONAL_PACKAGES = ("rdkit", "openpyxl")
 REQUIRED_BINARIES = ("pdftoppm", "pdfimages", "pdftotext")
 
 
