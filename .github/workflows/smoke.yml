@@ -31,9 +31,8 @@ jobs:
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
             while IFS=: read -r n rest; do
-              start=$((n - 15)); [ "$start" -lt 1 ] && start=1
-              end=$((n + 2))
-              sed -n "${start},${end}p" smoke.log | while IFS= read -r line; do
+              end=$((n + 14))
+              sed -n "${n},${end}p" smoke.log | while IFS= read -r line; do
                 echo "::error::$line"
               done
             done < <(grep -n '^  FAIL' smoke.log)
