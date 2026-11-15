@@ -436,6 +436,63 @@ then ok "valid NMR silent; invalid integrations/13C/HRMS fire"
 else bad "NMR/HRMS checker thresholds wrong"; fi
 
 echo
+echo "== 25. cross-paper corpus matcher =="
+mkdir -p "$TMP/corpus"
+python3 "$SCRIPTS/corpus_add.py" --corpus "$TMP/corpus" --key ref.1 \
+    --doi 10.0000/test --title "fixture reference" \
+    --figure "$FIX/images/dup_a.png" >"$TMP/corpus_add.log" 2>&1
+python3 "$SCRIPTS/corpus_match.py" --query "$FIX/images/dup_b.png" \
+    --corpus "$TMP/corpus" --json "$TMP/corpus_hit.json" >/dev/null 2>&1
+python3 "$SCRIPTS/corpus_match.py" --query "$FIX/images/diff.png" \
+    --corpus "$TMP/corpus" --json "$TMP/corpus_miss.json" >/dev/null 2>&1
+if python3 - "$TMP" <<'PYTEST'
+import json, sys, pathlib
+p = pathlib.Path(sys.argv[1])
+hit = json.load(open(p / "corpus_hit.json"))
+miss = json.load(open(p / "corpus_miss.json"))
+assert hit["strong_count"] >= 1, hit
+assert hit["candidates"][0]["inliers"] >= 10, hit["candidates"][0]
+assert miss["candidates"] == [], miss
+PYTEST
+then ok "corpus hit has ORB inliers; unrelated query is silent"
+else bad "cross-paper corpus matcher failed"; fi
+
+echo
+echo "== 26. offset-stacked trace splitting =="
+rm -rf "$TMP/offset"
+python3 "$SCRIPTS/offset_stack_split.py" "$FIX/panels/offset_2trace.png" \
+    "$TMP/offset" --traces 2 --json "$TMP/offset.json" >/dev/null 2>&1
+if python3 - "$TMP/offset.json" <<'PYTEST'
+import json, sys, pathlib
+d = json.load(open(sys.argv[1]))
+assert len(d["cuts"]) == 1, d
+assert len(d["bands"]) == 2, d
+assert all(pathlib.Path(p).is_file() for p in d["bands"]), d["bands"]
+PYTEST
+then ok "two offset traces split without separator rules"
+else bad "offset-stack splitter failed"; fi
+
+echo
+echo "== 27. executable report quality gate =="
+python3 "$SCRIPTS/report_gate.py" "$FIX/report/valid.md" \
+    --run-dir "$FIX/report" --json "$TMP/gate_ok.json" >/dev/null 2>&1
+python3 "$SCRIPTS/report_gate.py" "$FIX/report/invalid.md" \
+    --run-dir "$FIX/report" --json "$TMP/gate_bad.json" >/dev/null 2>&1 || true
+if python3 - "$TMP" <<'PYTEST'
+import json, sys, pathlib
+p = pathlib.Path(sys.argv[1])
+ok = json.load(open(p / "gate_ok.json"))
+bad = json.load(open(p / "gate_bad.json"))
+assert ok["pass"] is True and ok["errors"] == [], ok
+assert bad["pass"] is False, bad
+msgs = " ".join(e["message"] for e in bad["errors"])
+for needle in ("missing field", "unresolved placeholder", "verdict word"):
+    assert needle in msgs, msgs
+PYTEST
+then ok "valid report passes; missing locator/placeholder/verdict word fail"
+else bad "report quality gate thresholds wrong"; fi
+
+echo
 echo "======================================"
 echo "PASS $PASS   FAIL $FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

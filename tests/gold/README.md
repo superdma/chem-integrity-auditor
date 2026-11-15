@@ -25,6 +25,8 @@ the manifest, checklists, and aggregate summary.
 - `manifest.json` — five papers and their notice charges.
 - `run_paper.py` — deterministic sweep (ledger, numeric, NMR/HRMS, panel
   split, stack split, phash/ORB, fingerprint, segment scan, summary.json).
+  Offset stacks without separator rules are split manually with
+  `scripts/offset_stack_split.py` and recorded in the checklist.
 - `summarize_run.py` — triage view: only strong ORB, high fingerprint and
   segment hits, so the auditor knows what to inspect.
 - `checklists/<paper-id>.md` — per-charge outcome and level.

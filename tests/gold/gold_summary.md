@@ -64,12 +64,18 @@ Smoke suite after these changes: **59 passed, 0 failed**.
 
 ## Known limits
 
-- No cross-paper figure corpus → prior-publication charges cannot be tested.
-  A future extension is a local corpus of reference figures/peak tables keyed
-  by DOI, with manual export only.
-- Offset-stacked traces without separator rules (d0ra09390d Fig. 2/5/8b,
-  d2na00842d Fig. 1) are not isolated by the current splitter; those checks
-  used manual colour-mask profiles or coarse crops.
+- **Corpus seed data is still empty.** `corpus_add.py` / `corpus_match.py`
+  now make prior-publication checks possible, but the cited ref. 1 articles
+  are paywalled and must be exported by hand. Until those figures are
+  registered, the five cross-paper charges remain “not testable”.
+- **Offset-stack splitting is semi-automatic.** `offset_stack_split.py
+  --traces N` isolates d0ra09390d Fig. 2 into five traces and Fig. 8b into
+  two, but a faint trace or a label in the gap can move a cut; the chosen cuts
+  must be confirmed visually. Fig. 5's faint top trace still needs manual
+  adjustment.
+- **Report gate is format-level.** `report_gate.py` proves that sections,
+  locators and levels are present and resolvable; it does not prove the
+  grading is correct.
 - Raw-count authenticity (d2ra07661f) is outside an image/PDF pipeline.
 - The initial d5ra01695a run was lost to an accidental `rsync
   --delete-excluded`; it was regenerated from PMC, and the destructive

@@ -210,6 +210,17 @@ def make_panel_figure():
         dr.line(pts, fill=colour, width=2)
     stacked.save(d / "stacked_3band.png")
 
+    # offset-stacked traces with no separator rules (XRD/FTIR style)
+    offset = Image.new("RGB", (600, 320), (255, 255, 255))
+    od = ImageDraw.Draw(offset)
+    od.rectangle([30, 10, 569, 309], outline=(0, 0, 0), width=2)
+    for band, colour in enumerate([(210, 30, 30), (20, 90, 190)]):
+        base = 90 + band * 120
+        pts = [(x, base + 22 * np.sin(x / 17.0 + band * 2))
+               for x in range(45, 555)]
+        od.line(pts, fill=colour, width=2)
+    offset.save(d / "offset_2trace.png")
+
 
 # --------------------------------------------------------------------------
 # numeric markdown
@@ -323,6 +334,88 @@ def make_pubchem_cache():
     (d / f"{key}.json").write_text(json.dumps(ASPRIN), encoding="utf-8")
 
 
+def make_report_fixtures():
+    d = ensure("report")
+    (d / "evidence.json").write_text(json.dumps({"check": "fixture"}),
+                                     encoding="utf-8")
+    valid = """# 审计报告（fixture）
+
+## 1. 论文信息
+
+| DOI | 10.0000/fixture |
+
+## 2. 审计范围与方法
+
+- 图像线：panel_split + ORB。
+
+## 3. 发现
+
+### Level 2 — 明显异常
+
+#### X1
+- **位置**：`evidence.json`；Fig. 1 panel a
+- **技术**：XRD
+- **观察**：两个谱图共享背景纹理，noise_corr=0.81。
+- **良性解释（候选）**：同一仪器背景。
+- **压力测试**：独立样品应无共享纹理，故解释不成立。
+
+## 4. 各线小结
+
+| 线 | 状态 | 运行内容 |
+|---|---|---|
+| 数值线 | clean | chem_numeric |
+| 图像线 | 有发现 | ORB + fingerprint |
+| 逻辑线 | 部分不适用 | claim chain |
+
+## 5. 需作者提供的原始数据
+
+1. XRD 原始计数（X1）。
+
+## 6. 局限性
+
+- 分辨率限制。
+
+## 7. 质量门自检
+
+- [x] 位置可解析
+- [x] 压力测试完成
+- [x] 未下造假结论
+- [x] 三条线有状态
+- [x] 通知指控已核对
+"""
+    (d / "valid.md").write_text(valid, encoding="utf-8")
+
+    invalid = """# 审计报告（fixture）
+
+## 1. 论文信息
+
+<title>
+
+## 2. 审计范围与方法
+
+## 3. 发现
+
+### Level 3 — 需原始数据裁定
+
+#### BAD
+- **技术**：XRD
+- **观察**：数据造假。
+
+## 4. 各线小结
+
+| 数值线 | 未检查 |
+
+## 5. 需作者提供的原始数据
+
+## 6. 局限性
+
+## 7. 质量门自检
+
+- [ ] 位置可解析
+"""
+    (d / "invalid.md").write_text(invalid, encoding="utf-8")
+
+
 def main():
     make_spectra()
     make_segment_fixtures()
@@ -333,6 +426,7 @@ def main():
     make_numeric()
     make_mineru_fixture()
     make_pubchem_cache()
+    make_report_fixtures()
     print(f"fixtures written under {FIX}")
 
 

@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.4.0 — 2026-11-15
+
+Closes the three gaps recorded in the 0.3.0 gold summary.
+
+### Added
+
+- `scripts/corpus_add.py` + `scripts/corpus_match.py` — local, manually
+  exported reference-figure corpus; query figures/panels against it with
+  dHash + ORB + RANSAC for “first published in ref. 1” charges. No scraping.
+- `scripts/offset_stack_split.py` — semi-automatic split of offset-stacked
+  traces without separator rules: `--propose`, `--traces N`, `--cuts`.
+- `scripts/report_gate.py` — executable report quality gate: sections 1–7,
+  five fields per Level ≥ 2 finding, resolvable paths, placeholders, verdict
+  words, track statuses, section-7 checklist.
+- `references/10-corpus-and-gate.md`; README/SKILL integration.
+- Smoke sections 25–27 (70 checks total).
+
+### Changed
+
+- README status no longer lists the three gaps; it names corpus seed data as
+  the remaining manual step.
+- `tests/make_fixtures.py` adds an offset two-trace fixture and valid/invalid
+  report fixtures.
+
 ## 0.3.0 — 2026-11-15
 
 Gold-set batch: five real retraction notices, NMR/HRMS checks, and stacked-trace

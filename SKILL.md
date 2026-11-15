@@ -60,6 +60,7 @@ Read the relevant reference **before** executing its track, not after.
 | `references/08-reference-spectrum.md` | copied-database-spectrum playbook: digitize peak positions → match SDBS/NMRShiftDB peak table; score bands; what turns a match into a finding; export (no scraping) rules |
 | `references/05-logic-track.md` | logical playbook: chemistry claim chains (synthesis→purity→structure→performance), missing controls, characterization-vs-claim mismatches, domain plausibility |
 | `references/06-grading-report.md` | Level 1–4 grading, finding file format, quality gate, Chinese report assembly |
+| `references/10-corpus-and-gate.md` | cross-publication corpus workflow (manual export, `corpus_add`/`corpus_match`, hit interpretation) and the executable `report_gate.py` contract |
 
 ## Scripts
 
@@ -74,11 +75,14 @@ Read the relevant reference **before** executing its track, not after.
 | `scripts/structure_check.py` | PubChem identity check: name/SMILES/CAS/InChIKey/formula → CID, then formula / MW / exact mass (HRMS adducts) / CHN Calcd+Found / CAS / novelty comparisons; cached, offline-capable, RDKit cross-check |
 | `scripts/panel_split.py` | split multi-panel figure PNGs into individual panel PNGs |
 | `scripts/stack_split.py` | split **stacked traces** (2–4 spectra separated by full-width black rules) into one image per trace, with optional colour isolation (red/blue/green) so ORB/fingerprint compare curves, not legends |
+| `scripts/offset_stack_split.py` | semi-automatic split of **offset-stacked traces without separator rules**: `--propose` prints candidate cuts, `--traces N` auto-proposes and crops, `--cuts` applies confirmed rows |
+| `scripts/corpus_add.py` / `scripts/corpus_match.py` | register manually exported reference figures in a local corpus and match query figures/panels against it (dHash + ORB + RANSAC) for “first published in ref. 1” charges; no scraping |
 | `scripts/image_dup.py` | dHash/aHash perceptual duplicate detection (untransformed reuse) |
 | `scripts/image_dup_orb.py` | ORB feature matching (transformed reuse: rotation/flip/crop/brightness) + RANSAC inliers, inlier ratio, target bbox, `--json` evidence |
 | `scripts/spectral_noise_fingerprint.py` | curve-profile + background-noise correlation between two line-plot panels — catches re-plotted / re-labeled / white-point-shifted reuse that hashing misses |
 | `scripts/spectral_segment_dup.py` | **within-trace / between-trace segment reuse**: sliding full-height patch NCC for the retraction charge "a segment of the curve is identical", plus a profile-Pearson fallback |
 | `scripts/calibrate_image_thresholds.py` | labelled pair manifest → ROC/AUC/Youden threshold per metric (dHash, ORB, curve_r, noise); replaces inherited one-case thresholds with a measured calibration |
+| `scripts/report_gate.py` | executable report quality gate: required sections, Level 2+ fields and resolvable locators, no placeholders, no verdict words outside a notice/caveat, track statuses, checked section-7 list |
 | `scripts/check_env.py` | pre-run environment check: Python, Pillow/numpy/cv2/scipy/RDKit, poppler, MinerU env vars (presence only) |
 | `scripts/reference_spectrum_match.py` | digitize a spectrum panel (2-point axis calibration) or read a peak table, then match against SDBS/NMRShiftDB peak lists with tolerance + recall/precision scoring; semi-automatic copied-database-spectrum check |
 | `scripts/render_evidence_tables.py` | deterministic annotated PNG evidence cards for high-risk table findings |
@@ -221,6 +225,17 @@ manifest; otherwise state that the thresholds are uncalibrated defaults.
    `stack_split.py fig.png bands/ --keep-color auto`; the colour isolation
    makes ORB compare the curve, not the legend text. Bands cut from ONE
    image share its JPEG texture — never cite `noise_corr` for them.
+1c. **Offset stacks with no separator rules** (common in XRD/FTIR):
+   `offset_stack_split.py fig.png out/ --propose` prints candidate y cuts.
+   Confirm them visually, then re-run with `--cuts 130,265,350,480` (or use
+   `--traces N` for an automatic proposal). The cut is semi-automatic: a
+   faint trace or a label in the gap can move it, and a wrong cut silently
+   changes the comparison. Record the chosen cuts in the finding.
+1d. **Cross-publication reuse** (“first published in ref. 1”): register
+   manually exported reference figures with `corpus_add.py`, then run
+   `corpus_match.py --query $RUN/panels --corpus corpus`. A hit carries
+   dHash, ORB matches, RANSAC inliers and a bbox. No scraping; ref. figures
+   remain publisher copyright and stay outside the repository.
 2. `image_dup.py` over all panel PNGs; dHash distance < 10 = strong candidate,
    10–60 = escalate to `image_dup_orb.py`. ORB ≥30 matches is only a
    candidate: control it against a different-material pair and, for spectra,
@@ -275,8 +290,17 @@ having tried to kill the finding).
 
 Open `references/06-grading-report.md`. Assign Level 1–4 to every surviving
 finding, copy `templates/audit_report.md` to `$RUN/audit_report.md`, fill it
-section by section (Chinese), and run the quality gate checklist before
-delivering. Deliver the manifest, the findings tree, and the report.
+section by section (Chinese), and run the executable gate before delivering:
+
+```bash
+python3 <skill>/scripts/report_gate.py "$RUN/audit_report.md" \
+  --run-dir "$RUN" --json "$RUN/report_gate.json" --strict
+```
+
+Exit code 0 is required. The gate checks sections 1–7, the five fields on
+every Level ≥ 2 finding, resolvable evidence paths, placeholders, verdict
+words outside a quoted notice, track statuses, and the section-7 checklist.
+Deliver the manifest, the findings tree, the report, and the gate JSON.
 
 ## Grading
 

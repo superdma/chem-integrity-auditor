@@ -136,11 +136,14 @@ cd <skills>/chem-integrity-auditor && git pull
 | `structure_check.py` | PubChem 结构身份核验（离线缓存） |
 | `panel_split.py` | 多线索面板切分（白沟 / 框架线 / 内容带） |
 | `stack_split.py` | 按全宽分隔线切 stacked traces |
+| `offset_stack_split.py` | 无分隔线 offset 堆叠谱：候选切线 + 精确 `--cuts`（半自动） |
 | `image_dup.py` / `image_dup_orb.py` | 感知哈希 / ORB 变换复用（RANSAC inlier、inlier ratio、bbox、JSON） |
 | `spectral_noise_fingerprint.py` | 曲线 + 背景噪声指纹 |
 | `spectral_segment_dup.py` | 单条/两条曲线内部片段复用（patch NCC） |
+| `corpus_add.py` / `corpus_match.py` | 本地参考图库登记 / 跨论文 ORB+dHash 匹配 |
 | `reference_spectrum_match.py` | 峰表/谱图 vs SDBS/NMRShiftDB 峰表 |
 | `calibrate_image_thresholds.py` | 标注对 → ROC/AUC/Youden 阈值标定 |
+| `report_gate.py` | 可执行报告质量门（章节、Level 2+ 定位、禁用结论词） |
 | `check_env.py` | 环境自检 |
 
 ## 四、测试
@@ -150,7 +153,26 @@ python3 tests/make_fixtures.py
 bash tests/smoketest.sh
 ```
 
-当前基线：**全部通过，0 失败**（fresh clone 首次运行会多一项 fixture 生成检查）。覆盖所有脚本编译/`--help`、数值正负对照、PubChem 离线缓存、参考谱匹配、图像复用、谱图指纹、面板/stack 切分、片段复用、阈值标定、MinerU 三后端 mock 与 auto fallback。
+当前基线：**70 项通过，0 失败**（fresh clone 首次运行会多一项 fixture 生成检查）。覆盖所有脚本编译/`--help`、数值正负对照、PubChem 离线缓存、参考谱匹配、图像复用、谱图指纹、面板/stack/offset 切分、片段复用、阈值标定、跨论文图库、报告质量门、MinerU 三后端 mock 与 auto fallback。
+
+### 跨论文复用与报告门
+
+“首次发表于 ref. 1”类指控需要本地参考图库。图必须**手工导出**（本项目不抓取出版社页面），然后登记：
+
+```bash
+python3 scripts/corpus_add.py --corpus corpus --key 10.1016/j.xxxx \
+  --doi 10.1016/j.xxxx --title "Reference title" \
+  --figure ref-fig1.png --figure ref-fig2.png --license "local audit use only"
+python3 scripts/corpus_match.py --query output/.../panels --corpus corpus \
+  --json corpus_matches.json --md corpus_matches.md
+```
+
+报告写完后跑质量门；退出码非 0 即未通过：
+
+```bash
+python3 scripts/report_gate.py output/.../audit_report.md \
+  --run-dir output/.../workdir --json report_gate.json --strict
+```
 
 ## 五、非协商项
 
@@ -201,4 +223,4 @@ ACKNOWLEDGEMENTS.md      # 第三方依赖、数据源、算法引用与许可�
 
 ## 状态
 
-已完成：多线索面板切分、PMC HTML 表进台账、单条曲线片段复用、阈值标定 harness、环境自检与 CI；NMR/13C/HRMS 同位素检查；真实 MinerU cloud v4 验证；5 篇真实撤稿论文 gold set（13 条撤稿指控，逐条给出 reproduced / partial / not reproduced / untestable 与分级）。当前缺口：跨论文图库（用于“首次发表于 ref. 1”类指控）、无分隔线的 offset-stacked 谱图切分、可执行报告质量门。
+已完成：多线索面板切分、PMC HTML 表进台账、单条曲线片段复用、阈值标定 harness、环境自检与 CI；NMR/13C/HRMS 同位素检查；真实 MinerU cloud v4 验证；5 篇真实撤稿论文 gold set（13 条撤稿指控，逐条给出 reproduced / partial / not reproduced / untestable 与分级）；本地跨论文参考图库（`corpus_add` + `corpus_match`）；无分隔线 offset 堆叠谱半自动切分；可执行报告质量门。剩余工作主要是**图库种子数据**（需人工导出 ref. 1 图）与更多标注对上的阈值复核。
