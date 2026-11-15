@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `calibrate_image_thresholds.py` computes ROC AUC with a local trapezoid
+  loop instead of `np.trapz`, which NumPy 2.4 removed. GitHub Actions smoke
+  now passes on Python 3.11 with the current NumPy release.
+
+### Changed
+
+- CI prints Python paths and annotates the failing smoke section, including
+  the traceback, when the suite fails.
+
 ## 0.5.1 — 2026-11-15
 
 Follow-up to the comparison with
