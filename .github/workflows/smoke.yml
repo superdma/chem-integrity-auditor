@@ -18,5 +18,21 @@ jobs:
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
       - name: Generate deterministic fixtures
         run: python tests/make_fixtures.py
+      - name: Show Python paths
+        run: |
+          echo "python: $(command -v python) $(python --version 2>&1)"
+          echo "python3: $(command -v python3) $(python3 --version 2>&1)"
+          python -c "import PIL, numpy, cv2, scipy; print('python deps: ok')"
+          python3 -c "import PIL, numpy, cv2, scipy; print('python3 deps: ok')" || true
       - name: Run smoke suite
-        run: bash tests/smoketest.sh
+        run: |
+          set +e
+          bash tests/smoketest.sh 2>&1 | tee smoke.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            grep -E '^  FAIL|Traceback|ModuleNotFoundError|ERROR' smoke.log | head -20 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            echo "::error::smoke failed with status $status"
+          fi
+          exit "$status"
