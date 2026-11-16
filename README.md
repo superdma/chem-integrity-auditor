@@ -42,7 +42,7 @@
 
 ## 快速开始
 
-安装需要 Node.js 18+；运行需要 Python 3.8+、Pillow、NumPy、OpenCV，poppler 负责 PDF 栅格化。
+安装需要 Node.js 18+；运行需要 Python 3.8+、Pillow、NumPy、OpenCV，poppler 负责 PDF 栅格化；Chrome/Chromium 可选，用于生成 A4 PDF 报告。
 
 ```bash
 # 1. 安装 skill
@@ -75,6 +75,7 @@ python3 ~/.claude/skills/chem-integrity-auditor/scripts/check_env.py
 ```text
 output/chem-integrity-auditor/<slug>/<timestamp>/
 ├── audit_report.md          # 中文分级报告
+├── audit_report.pdf         # A4 交付版（证据图内嵌，需 Chrome/Chromium）
 ├── input_manifest.md        # 采集与阻断记录
 ├── findings/{numerical,image,logical}/
 ├── workdir/                 # 各脚本 JSON 证据
@@ -213,7 +214,7 @@ flowchart LR
 | 图像 | `panel_split.py`、`stack_split.py`、`offset_stack_split.py`、`image_dup.py`、`image_dup_orb.py`、`spectral_noise_fingerprint.py`、`spectral_segment_dup.py` |
 | 参考谱 | `reference_spectrum_match.py` |
 | 图库 | `corpus_add.py`、`corpus_match.py` |
-| 阈值与门禁 | `calibrate_image_thresholds.py`、`report_gate.py`、`report_figures.py`、`check_env.py` |
+| 阈值与门禁 | `calibrate_image_thresholds.py`、`report_gate.py`、`report_figures.py`、`render_report_pdf.py`、`check_env.py` |
 
 <details>
 <summary>完整脚本说明</summary>
@@ -238,6 +239,7 @@ flowchart LR
 | `reference_spectrum_match.py` | 峰表或谱图 vs SDBS/NMRShiftDB 峰表 |
 | `calibrate_image_thresholds.py` | 标注对 → ROC/AUC/Youden 阈值标定 |
 | `report_gate.py` | 可执行报告质量门（章节、Level 2+ 定位与证据图、禁用结论词） |
+| `render_report_pdf.py` | Markdown 审计报告 → A4 PDF；图片内嵌、表格保留、可选页码 |
 | `check_env.py` | 环境自检 |
 
 </details>
@@ -251,7 +253,7 @@ python3 tests/make_fixtures.py
 bash tests/smoketest.sh
 ```
 
-当前基线是 73 项通过、0 失败。fresh clone 首次运行会多一项 fixture 生成检查。范围包括所有脚本的编译与 `--help`、数值正负对照、PubChem 离线缓存、参考谱匹配、图像复用、谱图指纹、面板/stack/offset 切分、片段复用、阈值标定、跨论文图库、报告质量门、报告证据图，以及 MinerU 三后端 mock 和 auto fallback。
+当前基线是 76 项通过、0 失败（无 Chrome/Chromium 时 PDF 用例显示 SKIP，其余 75 项通过）。fresh clone 首次运行会多一项 fixture 生成检查。范围包括所有脚本的编译与 `--help`、数值正负对照、PubChem 离线缓存、参考谱匹配、图像复用、谱图指纹、面板/stack/offset 切分、片段复用、阈值标定、跨论文图库、报告质量门、报告证据图、A4 PDF 渲染，以及 MinerU 三后端 mock 和 auto fallback。
 
 `tests/gold/` 保存了 5 篇真实撤稿论文的逐条指控复盘：
 
@@ -282,7 +284,12 @@ python3 scripts/corpus_match.py --query output/.../panels --corpus corpus \
 ```bash
 python3 scripts/report_gate.py output/.../audit_report.md \
   --run-dir output/.../workdir --json report_gate.json --strict
+
+python3 scripts/render_report_pdf.py output/.../audit_report.md \
+  --output output/.../audit_report.pdf
 ```
+
+`render_report_pdf.py` 需要本机有 Chrome/Chromium；没有时仍交付 Markdown 报告，并在交付说明中注明 PDF 未生成。
 
 </details>
 

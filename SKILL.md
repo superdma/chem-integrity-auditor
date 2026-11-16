@@ -302,9 +302,12 @@ finding. Keep chemical formulas, oxidation states and level labels in the
 PDF's typography using Unicode sub/superscripts: MgCo₂O₄, MgCo₂O₄@ZnS,
 2p₃/₂, Co³⁺ — never MgCo2O4, 2p3/2 or Co3+. Before writing the report,
 generate one evidence-image pair per finding: the source page/figure with a
-red box, plus an enlarged crop. A negative scan (0 reused segments, no
-anomaly area to point at) uses a result table instead; do not draw a red box
-around normal-looking data.
+red box, plus an enlarged crop. The red box must tightly enclose the complete
+problem panel — its plot area, panel label and axis titles — without body
+text, page headers or unrelated white space. For a duplicated pair of
+adjacent panels, one box may cover both. A negative scan (0 reused segments,
+no anomaly area to point at) uses a result table instead; do not draw a red
+box around normal-looking data.
 
 ```bash
 # PDF source: page box is normalized (0-1), so the same numbers work at any DPI
@@ -341,8 +344,17 @@ Exit code 0 is required. The gate checks sections 1–7, the five fields on
 every Level ≥ 2 finding, its `证据图` block with a resolving image path,
 resolvable locators, unformatted chemical formulas (MgCo2O4 / 2p3/2 /
 Co3+), placeholders, verdict words outside a quoted notice, track statuses,
-and the section-7 checklist. Deliver the manifest, the findings tree, the
-report, and the gate JSON.
+and the section-7 checklist. Then render the delivery PDF (A4, evidence
+figures inline):
+
+```bash
+python3 <skill>/scripts/render_report_pdf.py "$RUN/audit_report.md" \
+  --output "$RUN/audit_report.pdf" --keep-html
+```
+
+The renderer needs headless Chrome/Chromium; without it, deliver the
+Markdown report and say the PDF was not produced. Deliver the manifest, the
+findings tree, `audit_report.md`, `audit_report.pdf`, and the gate JSON.
 
 ## Grading
 

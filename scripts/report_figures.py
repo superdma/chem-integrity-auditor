@@ -157,7 +157,7 @@ def main() -> int:
     # A white underlay keeps the box visible when it crosses a red curve.
     annotated = img.copy()
     draw = ImageDraw.Draw(annotated)
-    stroke = max(3, int(round(min(width, height) * 0.006)))
+    stroke = max(3, min(8, int(round(min(width, height) * 0.002))))
     for b in boxes:
         draw.rectangle(b, outline=(255, 255, 255), width=stroke + 4)
         draw.rectangle(b, outline=(210, 30, 30), width=stroke)

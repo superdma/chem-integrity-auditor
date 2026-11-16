@@ -540,6 +540,32 @@ else
 fi
 
 echo
+echo "== 29. PDF report =="
+CHROME_BIN="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+if [ -n "$CHROME_BIN" ]; then
+  if python3 "$SCRIPTS/render_report_pdf.py" "$FIX/report/valid.md" \
+       --output "$TMP/report.pdf" --chrome "$CHROME_BIN" >/dev/null 2>&1; then
+    if python3 - "$TMP/report.pdf" <<'PYTEST'
+import subprocess, sys
+pdf = sys.argv[1]
+info = subprocess.run(["pdfinfo", pdf], capture_output=True, text=True, check=True).stdout
+assert "Pages:" in info
+text = subprocess.run(["pdftotext", pdf, "-"], capture_output=True, text=True, check=True).stdout
+assert "审计报告" in text, text[:200]
+imgs = subprocess.run(["pdfimages", "-list", pdf], capture_output=True, text=True, check=True).stdout
+assert len([l for l in imgs.splitlines() if " image " in l]) >= 2, imgs[-300:]
+PYTEST
+    then ok "Markdown report renders to A4 PDF with text and evidence images"
+    else bad "PDF report content missing"; fi
+  else
+    bad "PDF report render"
+  fi
+else
+  echo "  SKIP  report PDF (Chrome/Chromium not found)"
+fi
+
+echo
 echo "======================================"
 echo "PASS $PASS   FAIL $FAIL"
 [ "$FAIL" -eq 0 ] || exit 1
+

@@ -17,9 +17,16 @@
 - Reports must reproduce the PDF's chemical typography with Unicode
   sub/superscripts (`MgCo₂O₄`, `2p₃/₂`, `Co³⁺`); the gate rejects compact
   spellings such as `MgCo2O4`, `2p3/2`, and `Co3+`.
+- `render_report_pdf.py` — renders the Markdown audit report to an A4 PDF
+  with inline evidence figures, intact tables and optional `N / M` page
+  numbers, using headless Chrome/Chromium.
+- `report_figures.py` red boxes now use a thinner 3–8 px stroke and target
+  the complete problem panel (plot area, panel label, axis titles), so the
+  crop matches the cited panel without body text or unrelated margins.
 - Smoke section 28 covers the annotated source/crop outputs; section 27 now
   also rejects a report missing its evidence image or containing an
-  unformatted chemical formula (73 checks).
+  unformatted chemical formula; section 29 verifies A4 PDF text and embedded
+  images (76 checks; PDF check is SKIP without Chrome).
 
 ### Fixed
 

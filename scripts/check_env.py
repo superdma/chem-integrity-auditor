@@ -2,7 +2,8 @@
 """check_env.py — verify the chemistry audit toolchain before a run.
 
 Checks Python, Python packages, poppler binaries, MinerU environment
-variables (presence only — never prints secrets), and optional RDKit.
+variables (presence only — never prints secrets), optional RDKit, and
+Chrome/Chromium for PDF report rendering.
 
 Usage:
     python3 scripts/check_env.py
@@ -26,6 +27,8 @@ REQUIRED_PACKAGES = ("PIL", "numpy")
 RECOMMENDED_PACKAGES = ("cv2", "scipy")
 OPTIONAL_PACKAGES = ("rdkit", "openpyxl")
 REQUIRED_BINARIES = ("pdftoppm", "pdfimages", "pdftotext")
+CHROME_CANDIDATES = ("google-chrome-stable", "google-chrome", "chromium",
+                     "chromium-browser", "chrome")
 
 
 def module_status(name: str) -> dict:
@@ -60,6 +63,11 @@ def main() -> int:
             name: {"path": shutil.which(name), "ok": shutil.which(name) is not None}
             for name in REQUIRED_BINARIES
         },
+        "chrome": {
+            "name": next((n for n in CHROME_CANDIDATES if shutil.which(n)), None),
+            "path": next((shutil.which(n) for n in CHROME_CANDIDATES
+                          if shutil.which(n)), None),
+        },
         "mineru": {
             "base_url_set": bool(os.environ.get("MINERU_BASE_URL")),
             "api_key_set": bool(os.environ.get("MINERU_API_KEY")),
@@ -93,6 +101,9 @@ def main() -> int:
         for name, item in checks["binaries"].items():
             print(f"  poppler     {name:<10} "
                   f"{'OK' if item['ok'] else 'MISSING'} {item['path'] or ''}")
+        chrome = checks["chrome"]
+        print(f"  optional    chrome     {'OK' if chrome['name'] else 'MISSING'} "
+              f"{chrome['path'] or '（PDF 报告需要 Chrome/Chromium）'}")
         print("MinerU env: "
               f"MINERU_BASE_URL={'set' if checks['mineru']['base_url_set'] else 'unset'}, "
               f"MINERU_API_KEY={'set' if checks['mineru']['api_key_set'] else 'unset'}, "

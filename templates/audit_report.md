@@ -11,6 +11,7 @@
 | 论文状态 | 正常 / 已撤稿（通知：<url>）/ 已勘误（通知：<url>） |
 | 审计日期 | <YYYY-MM-DD> |
 | 运行目录 | <output/chem-integrity-auditor/<slug>/<ts>> |
+| 报告文件 | `audit_report.md` / `audit_report.pdf` |
 
 **总体风险定级：<Low / Medium / High / Critical>**
 
@@ -37,7 +38,7 @@
 
 > 化学式、氧化态和谱线能级一律用 Unicode 上下标：MgCo₂O₄、MgCo₂O₄@ZnS、2p₃/₂、Co³⁺；不要写成 MgCo2O4、2p3/2、Co3+。PDF 里是什么上下标，报告里就保留什么，不把化学式当普通英文单词。
 >
-> 每条发现都要有图像或表格证据。Level ≥ 2 必须有“证据图”块：原页或原图红框 + 局部放大。PDF 来源在图注写“PDF 第 N 页 / 原文 Fig. X”；PMC 图件写“PMC 图件，无页码”。表格发现优先附 `render_evidence_tables.py` 生成的单元格高亮 PNG；没有 XLSX 时保留 Markdown 表，并在图注说明“无原始单元格”。Level 1 的阴性结果（未检出复用、计数为 0）不要伪造红框，用“证据表”列出检查项和结果。
+> 每条发现都要有图像或表格证据。Level ≥ 2 必须有“证据图”块：原页或原图红框 + 局部放大。红框只框问题面板的完整绘图区，包含面板标题和坐标轴标签，不要圈入正文、页眉或无关留白；相邻的重复谱可用一个框覆盖两幅。PDF 来源在图注写“PDF 第 N 页 / 原文 Fig. X”；PMC 图件写“PMC 图件，无页码”。表格发现优先附 `render_evidence_tables.py` 生成的单元格高亮 PNG；没有 XLSX 时保留 Markdown 表，并在图注说明“无原始单元格”。Level 1 的阴性结果（未检出复用、计数为 0）不要伪造红框，用“证据表”列出检查项和结果。
 
 ### Level 4 — 高度疑似失实
 
@@ -104,6 +105,7 @@
 - [ ] 所有 Level ≥ 2 发现的"压力测试"已完成且不成立
 - [ ] 所有 Level ≥ 2 发现的证据图路径可解析；PDF 写页码，PMC 写"PMC 图件，无页码"
 - [ ] 所有化学式/能级上下标使用 Unicode，与 PDF 排版一致（MgCo₂O₄、2p₃/₂、Co³⁺）
+- [ ] 已生成 `audit_report.pdf`（A4），证据图随发现内嵌
 - [ ] 报告未将"造假"作为结论（仅引用通知原文或 Level 4 "高度疑似失实"表述）
 - [ ] 三条线均有 clean / inapplicable / 发现 的明确状态
 - [ ] manifest 与已审材料一致

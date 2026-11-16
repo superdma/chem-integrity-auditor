@@ -83,12 +83,15 @@ Section discipline:
    *红框区域 2× 放大。*
    ```
 
-   Generate them with `report_figures.py` (PDF page or figure image). For a
-   PDF source, use normalized coordinates and state the page. For a PMC
-   figure, state "PMC 图件，无页码" — do not invent a page number. Table
-   findings use `render_evidence_tables.py` when the source XLSX exists;
-   otherwise keep the Markdown table and say the cell image is unavailable.
-   Level 1 findings carry an image or a table too; a negative scan (0 copied
+   Generate them with `report_figures.py` (PDF page or figure image). The red
+   box must tightly enclose the complete problem panel — plot area, panel
+   label and axis titles — not body text, page headers or unrelated white
+   space; adjacent duplicated panels may share one box. For a PDF source,
+   use normalized coordinates and state the page. For a PMC figure, state
+   "PMC 图件，无页码" — do not invent a page number. Table findings use
+   `render_evidence_tables.py` when the source XLSX exists; otherwise keep
+   the Markdown table and say the cell image is unavailable. Level 1
+   findings carry an image or a table too; a negative scan (0 copied
    segments) uses a result table, never an invented red box.
 4. **各线小结** — numerical / image / logical: what ran, lead counts,
    clean vs inapplicable status.
@@ -110,6 +113,7 @@ Section discipline:
       resolve; PDF sources name the page, PMC figures say "PMC 图件，无页码"
 - [ ] chemical formulas and level labels use Unicode sub/superscripts
       (MgCo₂O₄, 2p₃/₂, Co³⁺), matching the PDF; no MgCo2O4 / 2p3/2 / Co3+
+- [ ] `audit_report.pdf` was rendered (A4) and its evidence images resolve
 - [ ] no finding asserts "造假"/"fraud" as conclusion (grep the report for
       造假|fraud|fabricat — allowed only in quoted notice text or in
       "高度疑似失实" Level-4 framing)
@@ -137,6 +141,6 @@ Section discipline:
 - [ ] report renders (tables intact, no placeholder text left, no English
       sentence where Chinese is required — technical terms excepted)
 
-Delivery: the three paths (manifest, findings tree, report) + one-paragraph
-summary in the chat, starting with the overall risk and the single strongest
-evidence chain.
+Delivery: the four paths (manifest, findings tree, `audit_report.md`,
+`audit_report.pdf`) + one-paragraph summary in the chat, starting with the
+overall risk and the single strongest evidence chain.
