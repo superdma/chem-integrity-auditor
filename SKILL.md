@@ -87,6 +87,7 @@ Read the relevant reference **before** executing its track, not after.
 | `scripts/check_env.py` | pre-run environment check: Python, Pillow/numpy/cv2/scipy/RDKit, poppler, MinerU env vars (presence only) |
 | `scripts/reference_spectrum_match.py` | digitize a spectrum panel (2-point axis calibration) or read a peak table, then match against SDBS/NMRShiftDB peak lists with tolerance + recall/precision scoring; semi-automatic copied-database-spectrum check |
 | `scripts/render_evidence_tables.py` | deterministic annotated PNG evidence cards for high-risk table findings |
+| `scripts/report_figures.py` | annotated source page/figure with a red problem box plus an enlarged crop, for the report's evidence-image blocks |
 
 All scripts are stdlib, Pillow/NumPy/OpenCV, with SciPy optional; the XLSX
 evidence-card script also needs `openpyxl`. The only network access is
@@ -297,7 +298,35 @@ Level 3–4. dHash/ORB/noise on the same image are not independent lines.
 ### Step 8 — Grade, report, quality gate
 
 Open `references/06-grading-report.md`. Assign Level 1–4 to every surviving
-finding, copy `templates/audit_report.md` to `$RUN/audit_report.md`, fill it
+finding. Before writing the report, generate one evidence-image pair per
+finding: the source page/figure with a red box, plus an enlarged crop. A
+negative scan (0 reused segments, no anomaly area to point at) uses a result
+table instead; do not draw a red box around normal-looking data.
+
+```bash
+# PDF source: page box is normalized (0-1), so the same numbers work at any DPI
+python3 <skill>/scripts/report_figures.py --id <short-id> \
+  --pdf "$RUN/workdir/paper.pdf" --page 7 \
+  --box-norm 0.08,0.12,0.52,0.55 \
+  --output-dir "$RUN/findings/image" --run-dir "$RUN" \
+  --caption "Fig. 2 红/蓝 Raman trace 的共享噪声区"
+
+# PMC / figure source: box is in image pixels; caption must say there is no PDF page
+python3 <skill>/scripts/report_figures.py --id <short-id> \
+  --image "$RUN/workdir/figures_pmc/fig2.jpg" \
+  --box 60,90,380,395 \
+  --output-dir "$RUN/findings/image" --run-dir "$RUN" \
+  --caption "PMC 图件，无页码；红/蓝 Raman trace 的共享噪声区"
+```
+
+The script writes `<id>_source.png`, `<id>_crop.png`, and
+`<id>_manifest.json`; `--md-out` can also emit the Markdown block. For table
+findings, use `render_evidence_tables.py` when the source XLSX exists;
+otherwise keep the Markdown table and say so in the caption. If the source
+is a PMC figure, write "PMC 图件，无页码" rather than inventing a page
+number.
+
+Then copy `templates/audit_report.md` to `$RUN/audit_report.md`, fill it
 section by section (Chinese), and run the executable gate before delivering:
 
 ```bash
@@ -306,9 +335,10 @@ python3 <skill>/scripts/report_gate.py "$RUN/audit_report.md" \
 ```
 
 Exit code 0 is required. The gate checks sections 1–7, the five fields on
-every Level ≥ 2 finding, resolvable evidence paths, placeholders, verdict
-words outside a quoted notice, track statuses, and the section-7 checklist.
-Deliver the manifest, the findings tree, the report, and the gate JSON.
+every Level ≥ 2 finding, its `证据图` block with a resolving image path,
+resolvable locators, placeholders, verdict words outside a quoted notice,
+track statuses, and the section-7 checklist. Deliver the manifest, the
+findings tree, the report, and the gate JSON.
 
 ## Grading
 

@@ -70,9 +70,26 @@ Section discipline:
    all and why. If the retraction-notice checklist applies: one row per
    charge with 复现/无法复现/Level.
 3. **发现（按 Level 降序）** — each finding: location, observation, why,
-  pressure test, needed data. Cite the finding file path.
+  pressure test, needed data. Cite the finding file path. Every Level ≥ 2
+  finding also gets an `**证据图**` block with two images:
+
+   ```markdown
+   ![D5-F2 原文页面](findings/image/D5-F2_source.png)
+   *PDF 第 7 页 / 原文 Fig. 2；红框为问题区域。*
+
+   ![D5-F2 局部放大](findings/image/D5-F2_crop.png)
+   *红框区域 2× 放大。*
+   ```
+
+   Generate them with `report_figures.py` (PDF page or figure image). For a
+   PDF source, use normalized coordinates and state the page. For a PMC
+   figure, state "PMC 图件，无页码" — do not invent a page number. Table
+   findings use `render_evidence_tables.py` when the source XLSX exists;
+   otherwise keep the Markdown table and say the cell image is unavailable.
+   Level 1 findings carry an image or a table too; a negative scan (0 copied
+   segments) uses a result table, never an invented red box.
 4. **各线小结** — numerical / image / logical: what ran, lead counts,
-  clean vs inapplicable status.
+   clean vs inapplicable status.
 5. **需作者提供的原始数据** — the union of all findings' "needed to
    resolve", deduplicated, one numbered list. This section is what makes the
    report usable by an integrity office.
@@ -87,6 +104,8 @@ Section discipline:
 - [ ] every Level ≥ 2 finding has a location pointer that resolves to a
       real file/line in `$RUN/`
 - [ ] every Level ≥ 2 finding has a completed 压力测试 (failed) section
+- [ ] every Level ≥ 2 finding has a 证据图 block whose source/crop paths
+      resolve; PDF sources name the page, PMC figures say "PMC 图件，无页码"
 - [ ] no finding asserts "造假"/"fraud" as conclusion (grep the report for
       造假|fraud|fabricat — allowed only in quoted notice text or in
       "高度疑似失实" Level-4 framing)

@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Added
+
+- `report_figures.py` — builds an annotated source page/figure with a red
+  problem box and an enlarged crop, plus a manifest and optional Markdown
+  block. Supports PDF pages (normalized boxes) and PMC/figure images (pixel
+  boxes).
+- Report template now requires an `证据图` block for every Level ≥ 2 finding:
+  source with red box, crop, and a page label (or “PMC 图件，无页码”).
+  Level 1 findings carry an image or a result table; negative scans must not
+  invent a red box.
+- `report_gate.py` fails a Level ≥ 2 finding without `证据图` or without a
+  resolving image path.
+- Smoke section 28 covers the annotated source/crop outputs; section 27 now
+  also rejects a report missing its evidence image (73 checks).
+
 ### Fixed
 
 - `calibrate_image_thresholds.py` computes ROC AUC with a local trapezoid

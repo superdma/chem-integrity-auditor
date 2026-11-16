@@ -213,7 +213,7 @@ flowchart LR
 | 图像 | `panel_split.py`、`stack_split.py`、`offset_stack_split.py`、`image_dup.py`、`image_dup_orb.py`、`spectral_noise_fingerprint.py`、`spectral_segment_dup.py` |
 | 参考谱 | `reference_spectrum_match.py` |
 | 图库 | `corpus_add.py`、`corpus_match.py` |
-| 阈值与门禁 | `calibrate_image_thresholds.py`、`report_gate.py`、`check_env.py` |
+| 阈值与门禁 | `calibrate_image_thresholds.py`、`report_gate.py`、`report_figures.py`、`check_env.py` |
 
 <details>
 <summary>完整脚本说明</summary>
@@ -237,7 +237,7 @@ flowchart LR
 | `corpus_add.py` / `corpus_match.py` | 本地参考图库登记 / 跨论文 ORB + dHash 匹配 |
 | `reference_spectrum_match.py` | 峰表或谱图 vs SDBS/NMRShiftDB 峰表 |
 | `calibrate_image_thresholds.py` | 标注对 → ROC/AUC/Youden 阈值标定 |
-| `report_gate.py` | 可执行报告质量门（章节、Level 2+ 定位、禁用结论词） |
+| `report_gate.py` | 可执行报告质量门（章节、Level 2+ 定位与证据图、禁用结论词） |
 | `check_env.py` | 环境自检 |
 
 </details>
@@ -251,7 +251,7 @@ python3 tests/make_fixtures.py
 bash tests/smoketest.sh
 ```
 
-当前基线是 70 项通过、0 失败。fresh clone 首次运行会多一项 fixture 生成检查。范围包括所有脚本的编译与 `--help`、数值正负对照、PubChem 离线缓存、参考谱匹配、图像复用、谱图指纹、面板/stack/offset 切分、片段复用、阈值标定、跨论文图库、报告质量门，以及 MinerU 三后端 mock 和 auto fallback。
+当前基线是 73 项通过、0 失败。fresh clone 首次运行会多一项 fixture 生成检查。范围包括所有脚本的编译与 `--help`、数值正负对照、PubChem 离线缓存、参考谱匹配、图像复用、谱图指纹、面板/stack/offset 切分、片段复用、阈值标定、跨论文图库、报告质量门、报告证据图，以及 MinerU 三后端 mock 和 auto fallback。
 
 `tests/gold/` 保存了 5 篇真实撤稿论文的逐条指控复盘：
 

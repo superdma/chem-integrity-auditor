@@ -478,19 +478,54 @@ python3 "$SCRIPTS/report_gate.py" "$FIX/report/valid.md" \
     --run-dir "$FIX/report" --json "$TMP/gate_ok.json" >/dev/null 2>&1
 python3 "$SCRIPTS/report_gate.py" "$FIX/report/invalid.md" \
     --run-dir "$FIX/report" --json "$TMP/gate_bad.json" >/dev/null 2>&1 || true
+python3 - "$FIX/report/valid.md" "$TMP/gate_noimg.md" <<'PYTEST'
+import sys, pathlib
+src, dst = map(pathlib.Path, sys.argv[1:])
+text = src.read_text(encoding="utf-8")
+cut = text.split("- **证据图**：")[1].split("## 4. 各线小结")[0]
+dst.write_text(text.replace(cut, "\n"), encoding="utf-8")
+PYTEST
+python3 "$SCRIPTS/report_gate.py" "$TMP/gate_noimg.md" \
+    --run-dir "$FIX/report" --json "$TMP/gate_noimg.json" >/dev/null 2>&1 || true
 if python3 - "$TMP" <<'PYTEST'
 import json, sys, pathlib
 p = pathlib.Path(sys.argv[1])
 ok = json.load(open(p / "gate_ok.json"))
 bad = json.load(open(p / "gate_bad.json"))
+noimg = json.load(open(p / "gate_noimg.json"))
 assert ok["pass"] is True and ok["errors"] == [], ok
 assert bad["pass"] is False, bad
+assert noimg["pass"] is False, noimg
 msgs = " ".join(e["message"] for e in bad["errors"])
 for needle in ("missing field", "unresolved placeholder", "verdict word"):
     assert needle in msgs, msgs
+assert "证据图" in " ".join(e["message"] for e in noimg["errors"]), noimg
 PYTEST
-then ok "valid report passes; missing locator/placeholder/verdict word fail"
+then ok "valid report passes; missing locator/placeholder/verdict word/证据图 fail"
 else bad "report quality gate thresholds wrong"; fi
+
+echo
+echo "== 28. report figures =="
+mkdir -p "$TMP/report_fig"
+if python3 "$SCRIPTS/report_figures.py" --id smoke \
+     --image "$FIX/images/dup_a.png" --box 40,40,240,200 \
+     --output-dir "$TMP/report_fig" --run-dir "$TMP" \
+     --caption "smoke figure" >/dev/null 2>&1; then
+  if python3 - "$TMP/report_fig" <<'PYTEST'
+import json, sys, pathlib
+from PIL import Image
+p = pathlib.Path(sys.argv[1])
+m = json.load(open(p / "smoke_manifest.json"))
+assert m["id"] == "smoke" and m["source_kind"] == "figure", m
+assert (p / "smoke_source.png").is_file(), m
+assert (p / "smoke_crop.png").is_file(), m
+assert Image.open(p / "smoke_crop.png").size[0] > 200
+PYTEST
+  then ok "annotated source and enlarged crop are written"
+  else bad "report_figures outputs invalid"; fi
+else
+  bad "report_figures run"
+fi
 
 echo
 echo "======================================"

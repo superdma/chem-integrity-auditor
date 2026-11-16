@@ -5,6 +5,7 @@ Checks the contract that a human reviewer would otherwise have to remember:
 
 * required sections 1–7;
 * every Level ≥ 2 finding has 位置 / 技术 / 观察 / 良性解释 / 压力测试;
+* every Level ≥ 2 finding has a 证据图 block with a resolving image path;
 * a locator that resolves to a real artifact (path, figure+panel, table+cell);
 * no unresolved placeholders (`<title>`, `<N>`, …);
 * no verdict words (“造假/fraud/…”) outside a quoted notice or an explicit
@@ -41,6 +42,7 @@ FINDING_FIELDS = ["位置", "技术", "观察", "良性解释", "压力测试"]
 TRACKS = ["数值线", "图像线", "逻辑线"]
 STATUS_WORDS = ["clean", "有发现", "部分不适用", "不适用"]
 PATH_RE = re.compile(r"[A-Za-z0-9_./\\-]+\.(?:json|png|jpg|jpeg|md|csv|txt|xlsx?|pdf)")
+IMAGE_RE = re.compile(r"\.(?:png|jpe?g)$", re.I)
 PLACEHOLDER_RE = re.compile(r"<(?!https?://|mailto:)[A-Za-z][^<>\n]{0,60}>")
 LEVEL_RE = re.compile(r"^###\s+Level\s+([1-4])\b", re.I | re.M)
 FORBIDDEN = ["造假", "伪造", "篡改", "fraud", "fabricat"]
@@ -148,6 +150,15 @@ def main() -> int:
             if not paths:
                 warn(f"{title}: locator is structured text only; add a file path",
                      line)
+            if "证据图" not in block:
+                err(f"{title}: missing 证据图 block for Level {level}", line)
+            else:
+                images = [p for p in PATH_RE.findall(block)
+                          if IMAGE_RE.search(p.rstrip("`'\"()[]<>，。；;:"))]
+                if not images:
+                    err(f"{title}: 证据图 block has no image path", line)
+                elif not any(resolve_path(p, roots) for p in images):
+                    err(f"{title}: no 证据图 image path resolves", line)
 
     for track in TRACKS:
         if track not in text:
