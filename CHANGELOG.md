@@ -30,6 +30,10 @@
 
 ### Fixed
 
+- The PDF smoke check no longer assumes a Chinese title is extractable from
+  Chrome's PDF on every runner; it normalizes whitespace and accepts a Latin
+  marker (`XRD` / `DOI`) as evidence that text was embedded. Chrome also gets
+  `--disable-dev-shm-usage`, and CI uploads `smoke.log` when the job fails.
 - `calibrate_image_thresholds.py` computes ROC AUC with a local trapezoid
   loop instead of `np.trapz`, which NumPy 2.4 removed. GitHub Actions smoke
   now passes on Python 3.11 with the current NumPy release.
