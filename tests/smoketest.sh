@@ -487,21 +487,33 @@ dst.write_text(text.replace(cut, "\n"), encoding="utf-8")
 PYTEST
 python3 "$SCRIPTS/report_gate.py" "$TMP/gate_noimg.md" \
     --run-dir "$FIX/report" --json "$TMP/gate_noimg.json" >/dev/null 2>&1 || true
+python3 - "$FIX/report/valid.md" "$TMP/gate_formula.md" <<'PYTEST'
+import sys, pathlib
+src, dst = map(pathlib.Path, sys.argv[1:])
+text = src.read_text(encoding="utf-8")
+dst.write_text(text + "\n\n化学式测试：MgCo2O4。\n", encoding="utf-8")
+PYTEST
+python3 "$SCRIPTS/report_gate.py" "$TMP/gate_formula.md" \
+    --run-dir "$FIX/report" --json "$TMP/gate_formula.json" >/dev/null 2>&1 || true
 if python3 - "$TMP" <<'PYTEST'
 import json, sys, pathlib
 p = pathlib.Path(sys.argv[1])
 ok = json.load(open(p / "gate_ok.json"))
 bad = json.load(open(p / "gate_bad.json"))
 noimg = json.load(open(p / "gate_noimg.json"))
+formula = json.load(open(p / "gate_formula.json"))
 assert ok["pass"] is True and ok["errors"] == [], ok
 assert bad["pass"] is False, bad
 assert noimg["pass"] is False, noimg
+assert formula["pass"] is False, formula
 msgs = " ".join(e["message"] for e in bad["errors"])
 for needle in ("missing field", "unresolved placeholder", "verdict word"):
     assert needle in msgs, msgs
 assert "证据图" in " ".join(e["message"] for e in noimg["errors"]), noimg
+assert "unformatted chemical formula" in " ".join(
+    e["message"] for e in formula["errors"]), formula
 PYTEST
-then ok "valid report passes; missing locator/placeholder/verdict word/证据图 fail"
+then ok "valid report passes; missing locator/placeholder/verdict word/证据图/化学式 fail"
 else bad "report quality gate thresholds wrong"; fi
 
 echo

@@ -7,6 +7,7 @@ Checks the contract that a human reviewer would otherwise have to remember:
 * every Level ≥ 2 finding has 位置 / 技术 / 观察 / 良性解释 / 压力测试;
 * every Level ≥ 2 finding has a 证据图 block with a resolving image path;
 * a locator that resolves to a real artifact (path, figure+panel, table+cell);
+* chemical formulas and level labels use Unicode sub/superscripts;
 * no unresolved placeholders (`<title>`, `<N>`, …);
 * no verdict words (“造假/fraud/…”) outside a quoted notice or an explicit
   “not writing fraud” caveat;
@@ -47,6 +48,12 @@ PLACEHOLDER_RE = re.compile(r"<(?!https?://|mailto:)[A-Za-z][^<>\n]{0,60}>")
 LEVEL_RE = re.compile(r"^###\s+Level\s+([1-4])\b", re.I | re.M)
 FORBIDDEN = ["造假", "伪造", "篡改", "fraud", "fabricat"]
 BENIGN_CONTEXT = ["通知", "原文", "retract", "不写", "不是", "未", "不能", "不应"]
+UNFORMATTED_FORMULA_RES = [
+    re.compile(r"\b(?:MgCo2O4|NiCo2O4|Co3O4|MnCo2O4|ZnCo2O4|CuCo2O4|FeCo2O4)\b"),
+    re.compile(r"\b\d+p\d+/\d+\b"),
+    re.compile(r"\b(?:Co|Ni|Mn|Fe|Mg|Zn)\d+\+"),
+    re.compile(r"\b(?:H2O|CO2|NH3|CH4)\b"),
+]
 
 
 def split_findings(text: str):
@@ -130,6 +137,11 @@ def main() -> int:
         for word in FORBIDDEN:
             if word in line and not any(ctx in line for ctx in BENIGN_CONTEXT):
                 err(f"verdict word '{word}' outside a quoted notice/caveat", i)
+        for pattern in UNFORMATTED_FORMULA_RES:
+            match = pattern.search(line)
+            if match:
+                err(f"unformatted chemical formula '{match.group(0)}'; "
+                    "use Unicode sub/superscripts (MgCo₂O₄, 2p₃/₂, Co³⁺)", i)
 
     findings = split_findings(text)
     levels = [f[0] for f in findings]

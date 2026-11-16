@@ -14,8 +14,12 @@
   invent a red box.
 - `report_gate.py` fails a Level ≥ 2 finding without `证据图` or without a
   resolving image path.
+- Reports must reproduce the PDF's chemical typography with Unicode
+  sub/superscripts (`MgCo₂O₄`, `2p₃/₂`, `Co³⁺`); the gate rejects compact
+  spellings such as `MgCo2O4`, `2p3/2`, and `Co3+`.
 - Smoke section 28 covers the annotated source/crop outputs; section 27 now
-  also rejects a report missing its evidence image (73 checks).
+  also rejects a report missing its evidence image or containing an
+  unformatted chemical formula (73 checks).
 
 ### Fixed
 

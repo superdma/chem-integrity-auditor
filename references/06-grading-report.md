@@ -70,8 +70,10 @@ Section discipline:
    all and why. If the retraction-notice checklist applies: one row per
    charge with 复现/无法复现/Level.
 3. **发现（按 Level 降序）** — each finding: location, observation, why,
-  pressure test, needed data. Cite the finding file path. Every Level ≥ 2
-  finding also gets an `**证据图**` block with two images:
+  pressure test, needed data. Cite the finding file path. Chemical formulas,
+  oxidation states and level labels keep their PDF typography as Unicode:
+  MgCo₂O₄, MgCo₂O₄@ZnS, 2p₃/₂, Co³⁺ — never MgCo2O4, 2p3/2 or Co3+.
+  Every Level ≥ 2 finding also gets an `**证据图**` block with two images:
 
    ```markdown
    ![D5-F2 原文页面](findings/image/D5-F2_source.png)
@@ -106,6 +108,8 @@ Section discipline:
 - [ ] every Level ≥ 2 finding has a completed 压力测试 (failed) section
 - [ ] every Level ≥ 2 finding has a 证据图 block whose source/crop paths
       resolve; PDF sources name the page, PMC figures say "PMC 图件，无页码"
+- [ ] chemical formulas and level labels use Unicode sub/superscripts
+      (MgCo₂O₄, 2p₃/₂, Co³⁺), matching the PDF; no MgCo2O4 / 2p3/2 / Co3+
 - [ ] no finding asserts "造假"/"fraud" as conclusion (grep the report for
       造假|fraud|fabricat — allowed only in quoted notice text or in
       "高度疑似失实" Level-4 framing)

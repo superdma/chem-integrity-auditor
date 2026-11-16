@@ -298,10 +298,13 @@ Level 3–4. dHash/ORB/noise on the same image are not independent lines.
 ### Step 8 — Grade, report, quality gate
 
 Open `references/06-grading-report.md`. Assign Level 1–4 to every surviving
-finding. Before writing the report, generate one evidence-image pair per
-finding: the source page/figure with a red box, plus an enlarged crop. A
-negative scan (0 reused segments, no anomaly area to point at) uses a result
-table instead; do not draw a red box around normal-looking data.
+finding. Keep chemical formulas, oxidation states and level labels in the
+PDF's typography using Unicode sub/superscripts: MgCo₂O₄, MgCo₂O₄@ZnS,
+2p₃/₂, Co³⁺ — never MgCo2O4, 2p3/2 or Co3+. Before writing the report,
+generate one evidence-image pair per finding: the source page/figure with a
+red box, plus an enlarged crop. A negative scan (0 reused segments, no
+anomaly area to point at) uses a result table instead; do not draw a red box
+around normal-looking data.
 
 ```bash
 # PDF source: page box is normalized (0-1), so the same numbers work at any DPI
@@ -336,9 +339,10 @@ python3 <skill>/scripts/report_gate.py "$RUN/audit_report.md" \
 
 Exit code 0 is required. The gate checks sections 1–7, the five fields on
 every Level ≥ 2 finding, its `证据图` block with a resolving image path,
-resolvable locators, placeholders, verdict words outside a quoted notice,
-track statuses, and the section-7 checklist. Deliver the manifest, the
-findings tree, the report, and the gate JSON.
+resolvable locators, unformatted chemical formulas (MgCo2O4 / 2p3/2 /
+Co3+), placeholders, verdict words outside a quoted notice, track statuses,
+and the section-7 checklist. Deliver the manifest, the findings tree, the
+report, and the gate JSON.
 
 ## Grading
 
