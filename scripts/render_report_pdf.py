@@ -331,6 +331,7 @@ def main() -> int:
             kept.write_text(doc, encoding="utf-8")
         cmd = [
             chrome, "--headless=new", "--no-sandbox", "--disable-gpu",
+            "--disable-dev-shm-usage",
             "--no-pdf-header-footer", "--run-all-compositor-stages-before-draw",
             "--virtual-time-budget=15000", f"--print-to-pdf={output}",
             html_path.as_uri(),

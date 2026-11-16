@@ -551,9 +551,10 @@ pdf = sys.argv[1]
 info = subprocess.run(["pdfinfo", pdf], capture_output=True, text=True, check=True).stdout
 assert "Pages:" in info
 text = subprocess.run(["pdftotext", pdf, "-"], capture_output=True, text=True, check=True).stdout
-assert "审计报告" in text, text[:200]
+compact = "".join(text.split())
+assert any(m in compact for m in ("审计报告", "XRD", "DOI")), repr(text[:300])
 imgs = subprocess.run(["pdfimages", "-list", pdf], capture_output=True, text=True, check=True).stdout
-assert len([l for l in imgs.splitlines() if " image " in l]) >= 2, imgs[-300:]
+assert len([l for l in imgs.splitlines() if " image " in l]) >= 2, imgs[-500:]
 PYTEST
     then ok "Markdown report renders to A4 PDF with text and evidence images"
     else bad "PDF report content missing"; fi

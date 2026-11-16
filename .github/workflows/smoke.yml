@@ -39,3 +39,10 @@ jobs:
             echo "::error::smoke failed with status $status"
           fi
           exit "$status"
+      - name: Upload smoke log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-log
+          path: smoke.log
+          if-no-files-found: ignore
