@@ -85,6 +85,20 @@ do not need this flag.
 export MINERU_API_TOKEN="..."
 ```
 
+   Optional persistent location (outside the repository, mode `600`):
+
+   ```bash
+   mkdir -p ~/.config/chem-integrity-auditor
+   chmod 700 ~/.config/chem-integrity-auditor
+   printf 'MINERU_API_TOKEN=%s\n' 'your-token' \
+     > ~/.config/chem-integrity-auditor/mineru.env
+   chmod 600 ~/.config/chem-integrity-auditor/mineru.env
+   set -a; . ~/.config/chem-integrity-auditor/mineru.env; set +a
+   ```
+
+   The scripts do not read this file automatically; source it in the shell
+   (or add the three lines to `~/.bashrc`).
+
 3. Convert (local file → batch upload → poll → ZIP):
 
 ```bash

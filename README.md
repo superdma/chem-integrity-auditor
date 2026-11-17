@@ -59,7 +59,7 @@ sudo apt-get install poppler-utils   # Debian / Ubuntu
 python3 ~/.claude/skills/chem-integrity-auditor/scripts/check_env.py
 ```
 
-`check_env.py` 输出 `Overall: OK` 后，在 Agent 对话里直接说：
+`check_env.py` 输出 `Overall: OK` 后，如果审计本地 PDF/DOI，还需配置本地 MinerU 地址或云端 token，见下方 [MinerU 配置](#mineru-配置pdfdoi-路线二选一)。然后，在 Agent 对话里直接说：
 
 ```text
 用 chem-integrity-auditor 审计 /path/to/paper.pdf
@@ -164,6 +164,61 @@ bash tests/smoketest.sh                # 必须 0 failures
 - RDKit 可选，用于结构与分子式交叉校验；openpyxl 可选，用于 XLSX 表格证据图（`pip install openpyxl`）。
 - MinerU 可选。只有 PDF/DOI 路线的正文与 SI 解析需要它；PMC 路线用 `pmc_fetch.py`，不需要 MinerU。本地 4.x、2.x-3.x 与官方云 v4 都支持，见 [`references/09-mineru-setup.md`](references/09-mineru-setup.md)。
 - Token 只从环境变量读取（`MINERU_API_TOKEN` / `MINERU_API_KEY`），不会写进仓库、报告或 manifest。
+
+#### MinerU 配置（PDF/DOI 路线二选一）
+
+审计本地 PDF 或 DOI 时，必须先让 `mineru_convert.py` 找到可用的 MinerU。**本地服务和官方云任选其一**；只走 PMC 路线则不需要配置。
+
+**方案 A：本地 MinerU 服务（推荐，离线）**
+
+```bash
+# 1) 启动本地 MinerU 4.x（Docker 示例；已有服务可跳过）
+docker run -d --name mineru-api \
+  -p 127.0.0.1:8000:8000 \
+  -e MINERU_MODEL_SOURCE=local \
+  -e MINERU_DEVICE_MODE=cpu \
+  mineru:4.1.6 \
+  mineru-api --host 0.0.0.0 --port 8000
+
+# 2) 默认地址是 http://127.0.0.1:8000；端口不同时指定地址
+export MINERU_BASE_URL="http://127.0.0.1:18000"
+
+# 3) 仅当服务启动时用了 --api-key 才需要
+export MINERU_API_KEY="..."
+
+# 4) 验证：local.http 应为 200
+python3 ~/.claude/skills/chem-integrity-auditor/scripts/mineru_convert.py --probe
+```
+
+CPU 主机建议转换时加 `--tier flash` 或 `--tier basic`；完整启动参数和排错见 [`references/09-mineru-setup.md`](references/09-mineru-setup.md)。
+
+**方案 B：官方云 mineru.net**
+
+```bash
+# 1) 登录 https://mineru.net → 账号 → API，创建 token
+# 2) 只放在环境变量里，不要写入仓库或报告
+export MINERU_API_TOKEN="..."
+
+# 3) 验证：cloud.token_present 应为 true
+python3 ~/.claude/skills/chem-integrity-auditor/scripts/mineru_convert.py --probe
+```
+
+**可选：持久化到本地 env 文件**
+
+```bash
+mkdir -p ~/.config/chem-integrity-auditor
+chmod 700 ~/.config/chem-integrity-auditor
+printf 'MINERU_API_TOKEN=%s\n' '你的token' \
+  > ~/.config/chem-integrity-auditor/mineru.env
+chmod 600 ~/.config/chem-integrity-auditor/mineru.env
+
+# 每个新 shell 载入（也可写进 ~/.bashrc）
+set -a
+. ~/.config/chem-integrity-auditor/mineru.env
+set +a
+```
+
+`check_env.py` 会显示 `MINERU_API_TOKEN`、`MINERU_API_KEY` 是否已设置。两者都没有时，`--backend-mode auto` 只会尝试本地服务；本地也没有时，PDF/DOI 路线无法解析，请改用 PMC 路线或先提供已解析的 `full.md`。
 
 ### 更新与卸载
 
