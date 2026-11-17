@@ -121,7 +121,8 @@ output/chem-integrity-auditor/<slug>/<timestamp>/
 5. **自检**：原生 PowerShell 不能直接执行 `tests/smoketest.sh`。请用 WSL 或 Git Bash：
    ```powershell
    wsl bash tests/smoketest.sh
-   # 或 Git Bash: bash tests/smoketest.sh
+   # 或 Git Bash（其中可能没有 python3，显式指定解释器）:
+   # PYTHON=py bash tests/smoketest.sh
    ```
 
 支持程度：
