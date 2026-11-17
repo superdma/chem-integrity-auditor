@@ -81,7 +81,7 @@ def split_findings(text: str):
 
 def resolve_path(token: str, roots):
     token = token.strip("`'\"()[]<>，。；;:")
-    candidates = [token, token.lstrip("./")]
+    candidates = [token, token.lstrip("./\\")]
     for root in roots:
         for cand in candidates:
             path = (root / cand).resolve()

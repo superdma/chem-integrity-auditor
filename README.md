@@ -83,6 +83,58 @@ output/chem-integrity-auditor/<slug>/<timestamp>/
 └── supplementary/           # SI / 撤稿通知
 ```
 
+### Windows 使用说明
+
+**推荐用 WSL2（Ubuntu）跑完整流程**，bash 示例、`tests/smoketest.sh`、poppler 和 MinerU Docker 都能按 Linux 文档直接使用。
+
+原生 Windows PowerShell 也能运行核心 Python 脚本，但需要按下面调整：
+
+1. **Python**：用 `py -3` 或 `python`，不要假设有 `python3`。
+   ```powershell
+   py -3 -m pip install -r "$HOME\.claude\skills\chem-integrity-auditor\requirements.txt"
+   py -3 "$HOME\.claude\skills\chem-integrity-auditor\scripts\check_env.py"
+   ```
+
+2. **poppler**：下载 Windows 版 poppler，把其中的 `bin` 目录加入 `PATH`，确认：
+   ```powershell
+   pdftoppm -v
+   pdfimages -v
+   pdftotext -v
+   ```
+
+3. **PDF 报告**：新版 `render_report_pdf.py` 会自动查找 Chrome/Edge 的标准安装路径；找不到时显式指定：
+   ```powershell
+   py -3 scripts\render_report_pdf.py audit_report.md `
+     --chrome "C:\Program Files\Google\Chrome\Application\chrome.exe"
+   ```
+
+4. **MinerU**：本地服务用 Docker Desktop/WSL，或使用云端 token。PowerShell 设置环境变量：
+   ```powershell
+   $env:MINERU_BASE_URL = "http://127.0.0.1:8000"
+   # 或
+   $env:MINERU_API_TOKEN = "你的token"
+
+   py -3 scripts\mineru_convert.py --probe
+   ```
+   需要持久化时用 `setx MINERU_API_TOKEN "..."`（只对新开的终端生效），不要写入仓库。
+
+5. **自检**：原生 PowerShell 不能直接执行 `tests/smoketest.sh`。请用 WSL 或 Git Bash：
+   ```powershell
+   wsl bash tests/smoketest.sh
+   # 或 Git Bash: bash tests/smoketest.sh
+   ```
+
+支持程度：
+
+| 功能 | 原生 Windows | WSL2 / Git Bash |
+|---|---|---|
+| 数值/图像/结构 Python 脚本 | 可用（`python`） | 可用 |
+| poppler 图件提取 | 需手动加入 PATH | 可用 |
+| A4 PDF 报告 | 自动找 Chrome/Edge，或 `--chrome` | 可用 |
+| XLSX 中文证据表 | 已加入微软雅黑/黑体/宋体回退 | 可用 |
+| ORB 中文路径图片 | 已改为 Unicode 安全读取 | 可用 |
+| `tests/smoketest.sh` | 不支持原生 PowerShell | 可用 |
+
 <a id="install-options"></a>
 
 <details>
@@ -154,7 +206,7 @@ python3 -m pip install -r requirements.txt
 # poppler：pdftoppm / pdfimages / pdftotext
 sudo apt-get install poppler-utils     # Debian / Ubuntu
 brew install poppler                   # macOS
-# Windows 建议在 WSL 中运行，或把 poppler 的 bin 加入 PATH
+# Windows: 建议 WSL2；原生 PowerShell 见「Windows 使用说明」
 
 python3 scripts/check_env.py           # 必须输出 Overall: OK
 bash tests/smoketest.sh                # 必须 0 failures

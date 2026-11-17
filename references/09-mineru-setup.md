@@ -20,6 +20,18 @@ Only the cloud needs a token. Local parsing works offline.
 python3 <skill>/scripts/mineru_convert.py --probe
 ```
 
+On Windows PowerShell, set the same variables with `$env:` and run scripts
+with `python` / `py -3`:
+
+```powershell
+$env:MINERU_BASE_URL = "http://127.0.0.1:8000"
+$env:MINERU_API_TOKEN = "..."   # cloud only
+py -3 <skill>\scripts\mineru_convert.py --probe
+```
+
+For a persistent cloud token, use `setx MINERU_API_TOKEN "..."` and open a
+new terminal; never write the token into the repository.
+
 ## Local MinerU 4.x (recommended)
 
 The 4.x `mineru-api` no longer exposes `/file_parse` (it returns 404). The

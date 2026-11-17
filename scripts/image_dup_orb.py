@@ -71,7 +71,12 @@ except ImportError:
 
 
 def load_gray(path: str, max_dim: int = 1024) -> "np.ndarray | None":
-    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    # cv2.imread cannot open non-ASCII paths on Windows; decode bytes instead.
+    try:
+        data = np.fromfile(path, dtype=np.uint8)
+        img = cv2.imdecode(data, cv2.IMREAD_GRAYSCALE) if data.size else None
+    except (OSError, ValueError):
+        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     if img is None:
         return None
     h, w = img.shape[:2]

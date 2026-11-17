@@ -112,10 +112,13 @@ def save_extra_json_fields(obj, output_dir: pathlib.Path, prefix: str) -> list:
 def unpack_zip(zip_path: pathlib.Path, output_dir: pathlib.Path) -> list:
     """Extract a MinerU ZIP with path-traversal protection."""
     extracted = []
+    root = output_dir.resolve()
     with zipfile.ZipFile(zip_path) as zf:
         for member in zf.infolist():
-            target = (output_dir / member.filename).resolve()
-            if not str(target).startswith(str(output_dir.resolve())):
+            target = (root / member.filename).resolve()
+            try:
+                target.relative_to(root)
+            except ValueError:
                 raise RuntimeError(f"Unsafe zip path: {member.filename}")
             zf.extract(member, output_dir)
             extracted.append(member.filename)

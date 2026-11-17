@@ -42,6 +42,15 @@
 
 - CI prints Python paths and annotates the failing smoke section, including
   the traceback, when the suite fails.
+- Windows support: `check_env.py` and `render_report_pdf.py` discover Chrome
+  and Edge in their standard `Program Files` / `%LOCALAPPDATA%` locations,
+  `render_evidence_tables.py` falls back to Windows CJK fonts,
+  `image_dup_orb.py` loads images through `np.fromfile` + `cv2.imdecode` so
+  non-ASCII paths work, `mineru_convert.py` rejects ZIP members that escape
+  the output directory, and `report_gate.py` accepts `.\`-prefixed evidence
+  paths. README, SKILL, and the MinerU reference now document PowerShell
+  commands and the WSL2 recommendation. `tests/smoketest.sh` honours
+  `PYTHON` and falls back to `python`.
 
 ## 0.5.1 — 2026-11-15
 

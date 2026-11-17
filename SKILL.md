@@ -14,6 +14,16 @@ figures, adversarially tests every anomaly, and produces a structured Chinese
 This skill ships no LLM SDK — it is the skill instructions, references,
 templates, and single-purpose `scripts/` only.
 
+## Platform note
+
+The shell blocks below use bash syntax and `python3`. On Linux/macOS they run
+as written. On Windows, prefer WSL2: the full pipeline and `tests/smoketest.sh`
+work unchanged. For native PowerShell, run Python scripts with `python` or
+`py -3`, replace `export X=...` with `$env:X = "..."`, and run the smoke
+script through WSL or Git Bash. The Python scripts accept Windows paths, and
+`render_report_pdf.py` auto-detects Chrome/Edge in their standard install
+locations.
+
 ## Non-negotiables
 
 - **Findings are evidence, not verdicts.** Never write "造假" / "fraud" as a

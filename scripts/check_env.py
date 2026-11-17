@@ -20,6 +20,7 @@ import json
 import os
 import shutil
 import sys
+from pathlib import Path
 
 
 REQUIRED_PY = (3, 8)
@@ -27,8 +28,24 @@ REQUIRED_PACKAGES = ("PIL", "numpy")
 RECOMMENDED_PACKAGES = ("cv2", "scipy")
 OPTIONAL_PACKAGES = ("rdkit", "openpyxl")
 REQUIRED_BINARIES = ("pdftoppm", "pdfimages", "pdftotext")
-CHROME_CANDIDATES = ("google-chrome-stable", "google-chrome", "chromium",
-                     "chromium-browser", "chrome")
+CHROME_CANDIDATES = (
+    "google-chrome-stable", "google-chrome", "chromium", "chromium-browser",
+    "chrome",
+    "C:/Program Files/Google/Chrome/Application/chrome.exe",
+    "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
+    "%LOCALAPPDATA%/Google/Chrome/Application/chrome.exe",
+    "C:/Program Files/Microsoft/Edge/Application/msedge.exe",
+    "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+)
+
+
+def resolve_candidate(value: str):
+    expanded = os.path.expandvars(os.path.expanduser(value))
+    found = shutil.which(expanded) or shutil.which(value)
+    if found:
+        return found
+    path = Path(expanded)
+    return str(path) if path.is_file() else None
 
 
 def module_status(name: str) -> dict:
@@ -64,9 +81,10 @@ def main() -> int:
             for name in REQUIRED_BINARIES
         },
         "chrome": {
-            "name": next((n for n in CHROME_CANDIDATES if shutil.which(n)), None),
-            "path": next((shutil.which(n) for n in CHROME_CANDIDATES
-                          if shutil.which(n)), None),
+            "name": next((n for n in CHROME_CANDIDATES
+                          if resolve_candidate(n)), None),
+            "path": next((resolve_candidate(n) for n in CHROME_CANDIDATES
+                          if resolve_candidate(n)), None),
         },
         "mineru": {
             "base_url_set": bool(os.environ.get("MINERU_BASE_URL")),

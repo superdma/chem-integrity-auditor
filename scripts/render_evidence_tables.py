@@ -42,14 +42,24 @@ def load_font(size, bold=False):
         "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
         "/System/Library/Fonts/PingFang.ttc",
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/Library/Fonts/Arial Unicode.ttf",
+        "C:/Windows/Fonts/msyh.ttc",
+        "C:/Windows/Fonts/msyh.ttf",
+        "C:/Windows/Fonts/simhei.ttf",
+        "C:/Windows/Fonts/simsun.ttc",
+        "C:/Windows/Fonts/arial.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     ]
     bold_fonts = [
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
         "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Bold.otf",
         "/System/Library/Fonts/PingFang.ttc",
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/Library/Fonts/Arial Unicode.ttf",
+        "C:/Windows/Fonts/msyhbd.ttc",
+        "C:/Windows/Fonts/msyhbd.ttf",
+        "C:/Windows/Fonts/simhei.ttf",
+        "C:/Windows/Fonts/arialbd.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     ]
     for path in (bold_fonts if bold else regular):

@@ -6,10 +6,15 @@
 # PubChem cache works. Runs in ~20 s, no network required.
 #
 #   bash tests/smoketest.sh
+#   PYTHON=py bash tests/smoketest.sh      # Git Bash / MSYS on Windows
 #
 # Exits non-zero on any failure.
 
 set -uo pipefail
+PYTHON="${PYTHON:-python3}"
+if ! command -v "$PYTHON" >/dev/null 2>&1 && command -v python >/dev/null 2>&1; then
+  PYTHON=python
+fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SCRIPTS="$ROOT/scripts"
 FIX="$ROOT/tests/fixtures"
@@ -31,13 +36,13 @@ run_ok() {  # run_ok <label> <command...>
 
 echo "== 0. fixtures =="
 if [ ! -f "$FIX/numeric/full.md" ] || [ ! -f "$FIX/spectra/segment_dup.png" ] || [ ! -f "$FIX/calibration/manifest.json" ]; then
-  run_ok "generate fixtures" python3 "$ROOT/tests/make_fixtures.py"
+  run_ok "generate fixtures" "$PYTHON" "$ROOT/tests/make_fixtures.py"
 fi
 
 echo
 echo "== 1. compile =="
 for f in "$SCRIPTS"/*.py; do
-  if python3 -m py_compile "$f" >/dev/null 2>&1; then
+  if "$PYTHON" -m py_compile "$f" >/dev/null 2>&1; then
     ok "compile $(basename "$f")"
   else
     bad "compile $(basename "$f")"
@@ -47,7 +52,7 @@ done
 echo
 echo "== 2. --help =="
 for f in "$SCRIPTS"/*.py; do
-  if python3 "$f" --help >/dev/null 2>&1; then
+  if "$PYTHON" "$f" --help >/dev/null 2>&1; then
     ok "--help $(basename "$f")"
   else
     bad "--help $(basename "$f")"
@@ -56,9 +61,9 @@ done
 
 echo
 echo "== 3. chem_numeric: positive control =="
-if python3 "$SCRIPTS/chem_numeric.py" "$FIX/numeric" \
+if "$PYTHON" "$SCRIPTS/chem_numeric.py" "$FIX/numeric" \
      --output "$TMP/chem.json" >/dev/null 2>&1; then
-  if python3 - "$TMP/chem.json" <<'PY'
+  if "$PYTHON" - "$TMP/chem.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 checks = {f["check"] for f in d["findings"]}
@@ -75,9 +80,9 @@ fi
 
 echo
 echo "== 4. chem_numeric: negative control =="
-if python3 "$SCRIPTS/chem_numeric.py" "$FIX/numeric_clean" \
+if "$PYTHON" "$SCRIPTS/chem_numeric.py" "$FIX/numeric_clean" \
      --output "$TMP/clean.json" >/dev/null 2>&1; then
-  if python3 - "$TMP/clean.json" <<'PY'
+  if "$PYTHON" - "$TMP/clean.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 assert d["findings_count"] == 0, d["findings"]
@@ -89,9 +94,9 @@ fi
 
 echo
 echo "== 5. numeric_forensics =="
-if python3 "$SCRIPTS/numeric_forensics.py" "$FIX/numeric" \
+if "$PYTHON" "$SCRIPTS/numeric_forensics.py" "$FIX/numeric" \
      --output "$TMP/nf.json" >/dev/null 2>&1; then
-  if python3 - "$TMP/nf.json" <<'PY'
+  if "$PYTHON" - "$TMP/nf.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 assert isinstance(d, dict) and d, "empty report"
@@ -103,9 +108,9 @@ fi
 
 echo
 echo "== 6. evidence ledger =="
-if python3 "$SCRIPTS/build_evidence_ledger.py" "$FIX/numeric" \
+if "$PYTHON" "$SCRIPTS/build_evidence_ledger.py" "$FIX/numeric" \
      --output "$TMP/ledger.json" >/dev/null 2>&1; then
-  if python3 - "$TMP/ledger.json" <<'PY'
+  if "$PYTHON" - "$TMP/ledger.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 assert d["schema_version"] == "1.0"
@@ -121,13 +126,13 @@ fi
 
 echo
 echo "== 7. structure_check: offline positive =="
-if python3 "$SCRIPTS/structure_check.py" --name aspirin \
+if "$PYTHON" "$SCRIPTS/structure_check.py" --name aspirin \
      --reported-formula C9H8O4 --reported-mw 180.16 \
      --reported-chn "C=60.02,H=4.51" --reported-chn-calcd "C=60.00,H=4.48" \
      --reported-mz "181.0495 [M+H]+" \
      --offline --cache "$FIX/pubchem_cache" \
      --output "$TMP/sc.json" >/dev/null 2>&1; then
-  if python3 - "$TMP/sc.json" <<'PY'
+  if "$PYTHON" - "$TMP/sc.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 assert d["summary"]["hard"] == 0, d["summary"]
@@ -143,11 +148,11 @@ fi
 
 echo
 echo "== 8. structure_check: offline negative =="
-if python3 "$SCRIPTS/structure_check.py" --name aspirin \
+if "$PYTHON" "$SCRIPTS/structure_check.py" --name aspirin \
      --reported-formula C9H8O5 --reported-mw 196.16 \
      --offline --cache "$FIX/pubchem_cache" \
      --output "$TMP/sc_bad.json" >/dev/null 2>&1; then
-  if python3 - "$TMP/sc_bad.json" <<'PY'
+  if "$PYTHON" - "$TMP/sc_bad.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 checks = {c["check"]: c for c in d["queries"][0]["comparisons"]}
@@ -165,10 +170,10 @@ cat > "$TMP/compounds.json" <<'JSON'
 [{"label":"aspirin","name":"aspirin","reported_formula":"C9H8O4"},
  {"label":"caffeine","name":"caffeine","reported_formula":"C8H10N4O2"}]
 JSON
-python3 "$SCRIPTS/structure_check.py" --batch "$TMP/compounds.json" \
+"$PYTHON" "$SCRIPTS/structure_check.py" --batch "$TMP/compounds.json" \
     --offline --cache "$FIX/pubchem_cache" --output "$TMP/batch.json" \
     >/dev/null 2>&1
-python3 - "$TMP/batch.json" <<'PY'
+"$PYTHON" - "$TMP/batch.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 assert d["summary"]["n_compounds"] == 2, d["summary"]
@@ -180,12 +185,12 @@ else bad "batch mode added a phantom compound"; fi
 
 echo
 echo "== 9. reference_spectrum_match: image + reference =="
-if python3 "$SCRIPTS/reference_spectrum_match.py" \
+if "$PYTHON" "$SCRIPTS/reference_spectrum_match.py" \
      --sample-image "$FIX/spectra/spec_a.png" \
      --sample-x0 "100:8.0" --sample-x1 "700:0.0" --technique h1nmr \
      --ref "$FIX/refs/ref.csv" --ref "$FIX/refs/ref_other.csv" \
      --output "$TMP/rm.json" >/dev/null 2>&1; then
-  if python3 - "$TMP/rm.json" <<'PY'
+  if "$PYTHON" - "$TMP/rm.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 by = {r["label"]: r["match"] for r in d["references"] if "match" in r}
@@ -201,11 +206,11 @@ fi
 
 echo
 echo "== 10. reference_spectrum_match: text/peak-table mode =="
-if python3 "$SCRIPTS/reference_spectrum_match.py" \
+if "$PYTHON" "$SCRIPTS/reference_spectrum_match.py" \
      --sample-peaks "$FIX/refs/sample_peaks.txt" --technique h1nmr \
      --ref "$FIX/refs/ref_sdbs.txt" --ref-format text \
      --output "$TMP/rm_txt.json" >/dev/null 2>&1; then
-  if python3 - "$TMP/rm_txt.json" <<'PY'
+  if "$PYTHON" - "$TMP/rm_txt.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 m = d["best"]["match"]
@@ -218,7 +223,7 @@ fi
 
 echo
 echo "== 11. image_dup =="
-python3 "$SCRIPTS/image_dup.py" "$FIX/images/dup_a.png" \
+"$PYTHON" "$SCRIPTS/image_dup.py" "$FIX/images/dup_a.png" \
     "$FIX/images/dup_b.png" "$FIX/images/diff.png" >"$TMP/dup.log" 2>&1
 if grep -Eq 'dup_a\.png +dup_b\.png.*strong duplicate' "$TMP/dup.log"; then
   ok "brightness-shifted copy is a strong duplicate"
@@ -234,13 +239,13 @@ fi
 
 echo
 echo "== 12. spectral_noise_fingerprint =="
-python3 "$SCRIPTS/spectral_noise_fingerprint.py" \
+"$PYTHON" "$SCRIPTS/spectral_noise_fingerprint.py" \
     "$FIX/spectra/spec_a.png" "$FIX/spectra/spec_b.png" \
     --out "$TMP/fp_same.json" >/dev/null 2>&1
-python3 "$SCRIPTS/spectral_noise_fingerprint.py" \
+"$PYTHON" "$SCRIPTS/spectral_noise_fingerprint.py" \
     "$FIX/spectra/spec_a.png" "$FIX/spectra/spec_c.png" \
     --out "$TMP/fp_diff.json" >/dev/null 2>&1
-if python3 - "$TMP" <<'PY'
+if "$PYTHON" - "$TMP" <<'PY'
 import json, sys, pathlib
 p = pathlib.Path(sys.argv[1])
 same = json.load(open(p / "fp_same.json"))
@@ -255,7 +260,7 @@ else bad "spectral fingerprint thresholds wrong"; fi
 echo
 echo "== 13. panel_split =="
 mkdir -p "$TMP/panels"
-python3 "$SCRIPTS/panel_split.py" "$FIX/panels/figure_2panel.png" \
+"$PYTHON" "$SCRIPTS/panel_split.py" "$FIX/panels/figure_2panel.png" \
     "$TMP/panels" >"$TMP/ps.log" 2>&1
 N=$(find "$TMP/panels" -name '*.png' | wc -l)
 if [ "$N" -ge 2 ]; then ok "2-panel figure split into $N panels"
@@ -264,7 +269,7 @@ else bad "panel_split produced $N panels"; cat "$TMP/ps.log" | sed 's/^/        
 echo
 echo "== 14. stack_split =="
 mkdir -p "$TMP/bands"
-python3 "$SCRIPTS/stack_split.py" "$FIX/panels/stacked_3band.png" \
+"$PYTHON" "$SCRIPTS/stack_split.py" "$FIX/panels/stacked_3band.png" \
     "$TMP/bands" --keep-color auto >"$TMP/ss.log" 2>&1
 N=$(find "$TMP/bands" -name '*.png' | wc -l)
 if [ "$N" -eq 3 ]; then ok "3 stacked traces split into 3 bands"
@@ -275,7 +280,7 @@ else bad "auto colour isolation failed"; fi
 
 echo
 echo "== 15. MinerU local v1 (mock) =="
-MOCK_PORT=$(python3 - <<'PY'
+MOCK_PORT=$("$PYTHON" - <<'PY'
 import socket
 s = socket.socket()
 s.bind(("127.0.0.1", 0))
@@ -283,13 +288,13 @@ print(s.getsockname()[1])
 s.close()
 PY
 )
-python3 "$ROOT/tests/mock_mineru.py" "$MOCK_PORT" >"$TMP/mock.log" 2>&1 &
+"$PYTHON" "$ROOT/tests/mock_mineru.py" "$MOCK_PORT" >"$TMP/mock.log" 2>&1 &
 MOCK_PID=$!
 for _ in $(seq 1 50); do
   curl -sS -m 1 "http://127.0.0.1:$MOCK_PORT/v1/health" >/dev/null 2>&1 && break
   sleep 0.1
 done
-python3 "$SCRIPTS/mineru_convert.py" "$FIX/mineru/mock.pdf" \
+"$PYTHON" "$SCRIPTS/mineru_convert.py" "$FIX/mineru/mock.pdf" \
     --output "$TMP/mu_v1" --backend-mode local --local-api v1 \
     --base-url "http://127.0.0.1:$MOCK_PORT" --tier flash \
     --interval 1 --timeout 20 >"$TMP/mu_v1.log" 2>&1
@@ -301,7 +306,7 @@ fi
 
 echo
 echo "== 16. MinerU local legacy /file_parse (mock) =="
-python3 "$SCRIPTS/mineru_convert.py" "$FIX/mineru/mock.pdf" \
+"$PYTHON" "$SCRIPTS/mineru_convert.py" "$FIX/mineru/mock.pdf" \
     --output "$TMP/mu_legacy" --backend-mode local --local-api legacy \
     --base-url "http://127.0.0.1:$MOCK_PORT" \
     --timeout 20 >"$TMP/mu_legacy.log" 2>&1
@@ -314,7 +319,7 @@ fi
 echo
 echo "== 17. MinerU official cloud v4 (mock) =="
 MINERU_API_BASE="http://127.0.0.1:$MOCK_PORT" MINERU_API_TOKEN="test-token" \
-python3 "$SCRIPTS/mineru_convert.py" "$FIX/mineru/mock.pdf" \
+"$PYTHON" "$SCRIPTS/mineru_convert.py" "$FIX/mineru/mock.pdf" \
     --output "$TMP/mu_cloud" --backend-mode cloud \
     --interval 1 --timeout 20 >"$TMP/mu_cloud.log" 2>&1
 if [ -f "$TMP/mu_cloud/full.md" ] && grep -q "Mock MinerU output" "$TMP/mu_cloud/full.md"; then
@@ -326,12 +331,12 @@ fi
 echo
 echo "== 18. MinerU auto fallback local→cloud (mock) =="
 MINERU_API_BASE="http://127.0.0.1:$MOCK_PORT" MINERU_API_TOKEN="test-token" \
-python3 "$SCRIPTS/mineru_convert.py" "$FIX/mineru/mock.pdf" \
+"$PYTHON" "$SCRIPTS/mineru_convert.py" "$FIX/mineru/mock.pdf" \
     --output "$TMP/mu_auto" --backend-mode auto \
     --base-url "http://127.0.0.1:9" \
     --interval 1 --timeout 20 >"$TMP/mu_auto.log" 2>&1
 if [ -f "$TMP/mu_auto/full.md" ] && \
-   python3 - "$TMP/mu_auto/mineru_manifest.json" <<'PY'
+   "$PYTHON" - "$TMP/mu_auto/mineru_manifest.json" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
 assert "cloud" in d.get("source", ""), d.get("source")
@@ -341,20 +346,20 @@ else bad "auto fallback failed"; tail -10 "$TMP/mu_auto.log" | sed 's/^/        
 
 echo
 echo "== 19. MinerU probe =="
-if python3 "$SCRIPTS/mineru_convert.py" --probe \
+if "$PYTHON" "$SCRIPTS/mineru_convert.py" --probe \
      --base-url "http://127.0.0.1:$MOCK_PORT" >"$TMP/probe.log" 2>&1; then
   ok "--probe reports the mock local server"
 else bad "--probe failed"; cat "$TMP/probe.log" | sed 's/^/        /'; fi
 
 echo
 echo "== 20. spectral_segment_dup =="
-python3 "$SCRIPTS/spectral_segment_dup.py" \
+"$PYTHON" "$SCRIPTS/spectral_segment_dup.py" \
     --image "$FIX/spectra/segment_dup.png" --out "$TMP/seg_dup.json" \
     >/dev/null 2>&1
-python3 "$SCRIPTS/spectral_segment_dup.py" \
+"$PYTHON" "$SCRIPTS/spectral_segment_dup.py" \
     --image "$FIX/spectra/segment_clean.png" --out "$TMP/seg_clean.json" \
     >/dev/null 2>&1
-if python3 - "$TMP" <<'PYTEST'
+if "$PYTHON" - "$TMP" <<'PYTEST'
 import json, sys, pathlib
 p = pathlib.Path(sys.argv[1])
 dup = json.load(open(p / "seg_dup.json"))
@@ -370,9 +375,9 @@ else bad "segment duplication detector thresholds wrong"; fi
 echo
 echo "== 21. panel_split multi-cue fallback =="
 mkdir -p "$TMP/panels2"
-python3 "$SCRIPTS/panel_split.py" "$FIX/panels/figure_2panel.png" \
+"$PYTHON" "$SCRIPTS/panel_split.py" "$FIX/panels/figure_2panel.png" \
     "$TMP/panels2" --json "$TMP/panels2.json" >/dev/null 2>&1
-if python3 - "$TMP/panels2.json" <<'PYTEST'
+if "$PYTHON" - "$TMP/panels2.json" <<'PYTEST'
 import json, sys
 d = json.load(open(sys.argv[1]))
 assert d["panel_count"] >= 2, d
@@ -383,8 +388,8 @@ else bad "panel_split JSON/fallback failed"; fi
 
 echo
 echo "== 22. threshold calibration harness =="
-python3 "$SCRIPTS/calibrate_image_thresholds.py"     --manifest "$FIX/calibration/manifest.json"     --output "$TMP/calibration.json" >/dev/null 2>&1
-if python3 - "$TMP/calibration.json" <<'PYTEST'
+"$PYTHON" "$SCRIPTS/calibrate_image_thresholds.py"     --manifest "$FIX/calibration/manifest.json"     --output "$TMP/calibration.json" >/dev/null 2>&1
+if "$PYTHON" - "$TMP/calibration.json" <<'PYTEST'
 import json, sys
 d = json.load(open(sys.argv[1]))
 assert d["n_pairs"] == 5, d["n_pairs"]
@@ -397,10 +402,10 @@ else bad "calibration harness failed"; fi
 
 echo
 echo "== 23. ORB RANSAC geometry =="
-python3 "$SCRIPTS/image_dup_orb.py" \
+"$PYTHON" "$SCRIPTS/image_dup_orb.py" \
     "$FIX/images/dup_a.png" "$FIX/images/dup_b.png" "$FIX/images/diff.png" \
     --json "$TMP/orb.json" >"$TMP/orb.log" 2>&1 || true
-if python3 - "$TMP/orb.json" <<'PYTEST'
+if "$PYTHON" - "$TMP/orb.json" <<'PYTEST'
 import json, sys
 d = json.load(open(sys.argv[1]))
 pairs = {(p["a"], p["b"]): p for p in d["pairs"]}
@@ -417,9 +422,9 @@ else bad "ORB geometry report invalid"; fi
 
 echo
 echo "== 24. NMR / HRMS isotope checks =="
-python3 "$SCRIPTS/nmr_hrms_numeric.py" "$FIX/nmr" --output "$TMP/nmr_ok.json" >/dev/null 2>&1
-python3 "$SCRIPTS/nmr_hrms_numeric.py" "$FIX/nmr_invalid" --output "$TMP/nmr_bad.json" >/dev/null 2>&1
-if python3 - "$TMP" <<'PYTEST'
+"$PYTHON" "$SCRIPTS/nmr_hrms_numeric.py" "$FIX/nmr" --output "$TMP/nmr_ok.json" >/dev/null 2>&1
+"$PYTHON" "$SCRIPTS/nmr_hrms_numeric.py" "$FIX/nmr_invalid" --output "$TMP/nmr_bad.json" >/dev/null 2>&1
+if "$PYTHON" - "$TMP" <<'PYTEST'
 import json, sys, pathlib
 p = pathlib.Path(sys.argv[1])
 ok = json.load(open(p / "nmr_ok.json"))
@@ -438,14 +443,14 @@ else bad "NMR/HRMS checker thresholds wrong"; fi
 echo
 echo "== 25. cross-paper corpus matcher =="
 mkdir -p "$TMP/corpus"
-python3 "$SCRIPTS/corpus_add.py" --corpus "$TMP/corpus" --key ref.1 \
+"$PYTHON" "$SCRIPTS/corpus_add.py" --corpus "$TMP/corpus" --key ref.1 \
     --doi 10.0000/test --title "fixture reference" \
     --figure "$FIX/images/dup_a.png" >"$TMP/corpus_add.log" 2>&1
-python3 "$SCRIPTS/corpus_match.py" --query "$FIX/images/dup_b.png" \
+"$PYTHON" "$SCRIPTS/corpus_match.py" --query "$FIX/images/dup_b.png" \
     --corpus "$TMP/corpus" --json "$TMP/corpus_hit.json" >/dev/null 2>&1
-python3 "$SCRIPTS/corpus_match.py" --query "$FIX/images/diff.png" \
+"$PYTHON" "$SCRIPTS/corpus_match.py" --query "$FIX/images/diff.png" \
     --corpus "$TMP/corpus" --json "$TMP/corpus_miss.json" >/dev/null 2>&1
-if python3 - "$TMP" <<'PYTEST'
+if "$PYTHON" - "$TMP" <<'PYTEST'
 import json, sys, pathlib
 p = pathlib.Path(sys.argv[1])
 hit = json.load(open(p / "corpus_hit.json"))
@@ -460,9 +465,9 @@ else bad "cross-paper corpus matcher failed"; fi
 echo
 echo "== 26. offset-stacked trace splitting =="
 rm -rf "$TMP/offset"
-python3 "$SCRIPTS/offset_stack_split.py" "$FIX/panels/offset_2trace.png" \
+"$PYTHON" "$SCRIPTS/offset_stack_split.py" "$FIX/panels/offset_2trace.png" \
     "$TMP/offset" --traces 2 --json "$TMP/offset.json" >/dev/null 2>&1
-if python3 - "$TMP/offset.json" <<'PYTEST'
+if "$PYTHON" - "$TMP/offset.json" <<'PYTEST'
 import json, sys, pathlib
 d = json.load(open(sys.argv[1]))
 assert len(d["cuts"]) == 1, d
@@ -474,28 +479,28 @@ else bad "offset-stack splitter failed"; fi
 
 echo
 echo "== 27. executable report quality gate =="
-python3 "$SCRIPTS/report_gate.py" "$FIX/report/valid.md" \
+"$PYTHON" "$SCRIPTS/report_gate.py" "$FIX/report/valid.md" \
     --run-dir "$FIX/report" --json "$TMP/gate_ok.json" >/dev/null 2>&1
-python3 "$SCRIPTS/report_gate.py" "$FIX/report/invalid.md" \
+"$PYTHON" "$SCRIPTS/report_gate.py" "$FIX/report/invalid.md" \
     --run-dir "$FIX/report" --json "$TMP/gate_bad.json" >/dev/null 2>&1 || true
-python3 - "$FIX/report/valid.md" "$TMP/gate_noimg.md" <<'PYTEST'
+"$PYTHON" - "$FIX/report/valid.md" "$TMP/gate_noimg.md" <<'PYTEST'
 import sys, pathlib
 src, dst = map(pathlib.Path, sys.argv[1:])
 text = src.read_text(encoding="utf-8")
 cut = text.split("- **证据图**：")[1].split("## 4. 各线小结")[0]
 dst.write_text(text.replace(cut, "\n"), encoding="utf-8")
 PYTEST
-python3 "$SCRIPTS/report_gate.py" "$TMP/gate_noimg.md" \
+"$PYTHON" "$SCRIPTS/report_gate.py" "$TMP/gate_noimg.md" \
     --run-dir "$FIX/report" --json "$TMP/gate_noimg.json" >/dev/null 2>&1 || true
-python3 - "$FIX/report/valid.md" "$TMP/gate_formula.md" <<'PYTEST'
+"$PYTHON" - "$FIX/report/valid.md" "$TMP/gate_formula.md" <<'PYTEST'
 import sys, pathlib
 src, dst = map(pathlib.Path, sys.argv[1:])
 text = src.read_text(encoding="utf-8")
 dst.write_text(text + "\n\n化学式测试：MgCo2O4。\n", encoding="utf-8")
 PYTEST
-python3 "$SCRIPTS/report_gate.py" "$TMP/gate_formula.md" \
+"$PYTHON" "$SCRIPTS/report_gate.py" "$TMP/gate_formula.md" \
     --run-dir "$FIX/report" --json "$TMP/gate_formula.json" >/dev/null 2>&1 || true
-if python3 - "$TMP" <<'PYTEST'
+if "$PYTHON" - "$TMP" <<'PYTEST'
 import json, sys, pathlib
 p = pathlib.Path(sys.argv[1])
 ok = json.load(open(p / "gate_ok.json"))
@@ -519,11 +524,11 @@ else bad "report quality gate thresholds wrong"; fi
 echo
 echo "== 28. report figures =="
 mkdir -p "$TMP/report_fig"
-if python3 "$SCRIPTS/report_figures.py" --id smoke \
+if "$PYTHON" "$SCRIPTS/report_figures.py" --id smoke \
      --image "$FIX/images/dup_a.png" --box 40,40,240,200 \
      --output-dir "$TMP/report_fig" --run-dir "$TMP" \
      --caption "smoke figure" >/dev/null 2>&1; then
-  if python3 - "$TMP/report_fig" <<'PYTEST'
+  if "$PYTHON" - "$TMP/report_fig" <<'PYTEST'
 import json, sys, pathlib
 from PIL import Image
 p = pathlib.Path(sys.argv[1])
@@ -543,9 +548,9 @@ echo
 echo "== 29. PDF report =="
 CHROME_BIN="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
 if [ -n "$CHROME_BIN" ]; then
-  if python3 "$SCRIPTS/render_report_pdf.py" "$FIX/report/valid.md" \
+  if "$PYTHON" "$SCRIPTS/render_report_pdf.py" "$FIX/report/valid.md" \
        --output "$TMP/report.pdf" --chrome "$CHROME_BIN" >/dev/null 2>&1; then
-    if python3 - "$TMP/report.pdf" <<'PYTEST'
+    if "$PYTHON" - "$TMP/report.pdf" <<'PYTEST'
 import subprocess, sys
 pdf = sys.argv[1]
 info = subprocess.run(["pdfinfo", pdf], capture_output=True, text=True, check=True).stdout

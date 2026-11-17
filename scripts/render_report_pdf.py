@@ -37,22 +37,37 @@ CHROME_CANDIDATES = [
     "chromium-browser",
     "chrome",
     "headless_shell",
+    "C:/Program Files/Google/Chrome/Application/chrome.exe",
+    "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
+    "%LOCALAPPDATA%/Google/Chrome/Application/chrome.exe",
+    "C:/Program Files/Microsoft/Edge/Application/msedge.exe",
+    "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
 ]
+
+
+def resolve_binary(value: str) -> str:
+    """Resolve a PATH name, an expanded path, or a Windows absolute path."""
+    expanded = os.path.expandvars(os.path.expanduser(value))
+    found = shutil.which(expanded) or shutil.which(value)
+    if found:
+        return found
+    path = Path(expanded)
+    return str(path) if path.is_file() else ""
 
 
 def find_chrome(explicit: str = "") -> str:
     if explicit:
-        path = shutil.which(explicit) or (explicit if Path(explicit).is_file() else "")
+        path = resolve_binary(explicit)
         if not path:
             raise SystemExit(f"chrome executable not found: {explicit}")
         return path
     env = os.environ.get("CHROME") or os.environ.get("CHROME_BIN")
     if env:
-        path = shutil.which(env) or (env if Path(env).is_file() else "")
+        path = resolve_binary(env)
         if path:
             return path
     for name in CHROME_CANDIDATES:
-        path = shutil.which(name)
+        path = resolve_binary(name)
         if path:
             return path
     raise SystemExit(
@@ -320,6 +335,7 @@ def main() -> int:
 
     output = Path(args.output).expanduser().resolve() if args.output \
         else report.with_suffix(".pdf")
+    output.parent.mkdir(parents=True, exist_ok=True)
     chrome = find_chrome(args.chrome)
     doc = build_html(text, report.parent, args.title)
 
