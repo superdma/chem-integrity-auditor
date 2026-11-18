@@ -4,6 +4,18 @@
 
 ### Added
 
+- Native PDF backend — `pdf_native_extract.py` uses `pdfplumber` for text and
+  ruled tables and `pypdfium2` for figure crops, writing `full.md`,
+  `tables.json`, `figures.json` and `native_manifest.json`. `mineru_convert.py
+  --backend-mode auto` tries it first; scanned/complex PDFs fall through to
+  MinerU. No MinerU service or token is needed for born-digital PDFs.
+- `render_pdf_table_evidence.py` — PDF table to a PNG evidence card with
+  row/column highlighting and a manifest, complementing the XLSX card
+  renderer.
+- Card-based report layout — `render_report_pdf.py --layout cards` (default)
+  renders a paper header with risk badges, a findings index, per-finding cards
+  and an evidence grid, while `--layout classic` keeps the old plain layout.
+  `report_cards.py` parses the Markdown report into that structure.
 - `report_figures.py` — builds an annotated source page/figure with a red
   problem box and an enlarged crop, plus a manifest and optional Markdown
   block. Supports PDF pages (normalized boxes) and PMC/figure images (pixel
@@ -26,7 +38,8 @@
 - Smoke section 28 covers the annotated source/crop outputs; section 27 now
   also rejects a report missing its evidence image or containing an
   unformatted chemical formula; section 29 verifies A4 PDF text and embedded
-  images (76 checks; PDF check is SKIP without Chrome).
+  images; sections 30–31 cover native PDF extraction and the report-card
+  parser (84 checks; PDF check is SKIP without Chrome).
 
 ### Fixed
 
@@ -42,6 +55,11 @@
 
 - CI prints Python paths and annotates the failing smoke section, including
   the traceback, when the suite fails.
+- Report template asks for a parsing backend plus reviewed/unresolved image
+  coverage; the report gate now attributes the last finding to its own Level
+  heading, and accepts Windows drive-letter evidence paths.
+- `requirements.txt` and `check_env.py` include `pdfplumber` (native PDF) and
+  `pypdfium2` (figure crops); native text/tables work without poppler.
 - Windows support: `check_env.py` and `render_report_pdf.py` discover Chrome
   and Edge in their standard `Program Files` / `%LOCALAPPDATA%` locations,
   `render_evidence_tables.py` falls back to Windows CJK fonts,

@@ -15,10 +15,13 @@ summarized numbers — still valuable, but report the limitation explicitly.
 | Article URL | any journal page | fetch HTML first |
 | Retraction-notice audit | user names a retracted paper | fetch the **retraction notice** too (see below) |
 
-Once a PDF is in hand, parsing is done by `mineru_convert.py`. It supports a
-local MinerU 4.x v1 API, a local 2.x/3.x legacy `/file_parse`, and the
-official cloud v4 — the backend choice, CPU tier caveats and troubleshooting
-are in `09-mineru-setup.md`. If the article is in PMC (Route B), skip MinerU
+Once a PDF is in hand, parsing is done by `mineru_convert.py`. `auto` now
+tries the **native PDF backend first** (pdfplumber text/ruled tables +
+pypdfium2 figure crops), then a local MinerU 4.x v1 API, a local 2.x/3.x
+legacy `/file_parse`, and the official cloud v4. Native parsing needs no
+service or token; scanned/image-only PDFs and tables it cannot extract fall
+through to MinerU. The backend choice, CPU tier caveats and troubleshooting
+are in `09-mineru-setup.md`. If the article is in PMC (Route B), skip both
 and use `pmc_fetch.py`.
 
 ## Acquisition order (try every step, do not stop early)

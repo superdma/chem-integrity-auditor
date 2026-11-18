@@ -25,8 +25,8 @@ from pathlib import Path
 
 REQUIRED_PY = (3, 8)
 REQUIRED_PACKAGES = ("PIL", "numpy")
-RECOMMENDED_PACKAGES = ("cv2", "scipy")
-OPTIONAL_PACKAGES = ("rdkit", "openpyxl")
+RECOMMENDED_PACKAGES = ("cv2", "scipy", "pdfplumber")
+OPTIONAL_PACKAGES = ("rdkit", "openpyxl", "pypdfium2")
 REQUIRED_BINARIES = ("pdftoppm", "pdfimages", "pdftotext")
 CHROME_CANDIDATES = (
     "google-chrome-stable", "google-chrome", "chromium", "chromium-browser",
@@ -129,6 +129,9 @@ def main() -> int:
         print("Overall:", "OK" if required_ok else "MISSING REQUIRED ITEMS")
         if not checks["packages"]["recommended"][0]["found"]:
             print("note: OpenCV (cv2) is required for ORB and patch segment matching")
+        if not checks["packages"]["recommended"][2]["found"]:
+            print("note: pdfplumber enables the native PDF backend "
+                  "(no MinerU/token); pypdfium2 adds PDF figure crops")
     return 0 if required_ok else 1
 
 

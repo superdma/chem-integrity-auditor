@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Convert a paper PDF with MinerU — local and official-cloud backends.
+"""Convert a paper PDF to ``full.md`` — native, local MinerU and cloud.
 
 Backends, tried in this order by ``--backend-mode auto``:
 
+0. **Native PDF** — ``pdfplumber`` text/ruled tables + optional
+   ``pypdfium2`` figure crops. No MinerU service or token is needed. This is
+   the default for born-digital PDFs; image-only/scanned PDFs fall through.
 1. **Local MinerU 4.x** — ``mineru-api`` v1 task API:
    ``POST /v1/tasks`` → PUT the upload link → poll ``GET /v1/tasks/{id}``
    → download the result ZIP. Configured by ``MINERU_BASE_URL``
@@ -15,7 +18,7 @@ Backends, tried in this order by ``--backend-mode auto``:
    for URLs), token in ``MINERU_API_TOKEN``. The base URL can be overridden
    with ``MINERU_API_BASE`` for testing.
 
-Only the official cloud needs a token. Local parsing works offline.
+Only the official cloud needs a token. Native and local parsing work offline.
 
 CPU-only local deployments: MinerU 4.x ``tier=auto`` may select a VLM tier
 that needs a GPU. Use ``--tier flash`` (fast text extraction) or
@@ -142,6 +145,36 @@ def ensure_full_md(output_dir: pathlib.Path) -> str:
             (output_dir / "full.md").write_text(text, encoding="utf-8")
             return text
     return ""
+
+
+def native_convert(file_path: pathlib.Path, output_dir: pathlib.Path,
+                   dpi: int = 200, figures: bool = True,
+                   table_strategy: str = "lines") -> dict:
+    """Try the no-MinerU backend; return a manifest or raise."""
+    try:
+        import pdf_native_extract
+    except ImportError as exc:
+        raise RuntimeError(
+            "native backend needs pdfplumber: "
+            "python3 -m pip install 'pdfplumber>=0.11,<0.11.5'"
+        ) from exc
+    native = pdf_native_extract.extract(
+        file_path, output_dir, dpi=dpi, figures=figures,
+        table_strategy=table_strategy)
+    if not native.get("text_chars"):
+        raise RuntimeError(
+            "native backend found no extractable text (scanned PDF); "
+            "use MinerU or OCR")
+    manifest = dict(native)
+    manifest.update({
+        "backend": "native-pdf",
+        "input": str(file_path),
+        "output_dir": str(output_dir),
+        "full_md": str(output_dir / "full.md"),
+        "full_md_bytes": (output_dir / "full.md").stat().st_size,
+        "native_manifest": str(output_dir / "native_manifest.json"),
+    })
+    return manifest
 
 
 def download_file(url: str, target: pathlib.Path, headers: dict = None,
@@ -481,14 +514,24 @@ def cloud_convert(input_value: str, output_dir: pathlib.Path,
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Convert a paper PDF with MinerU (local v1 → local legacy "
+        description="Convert a paper PDF (native → local MinerU v1 → legacy "
                     "→ official cloud).")
     parser.add_argument("input", nargs="?",
                         help="Local PDF path or a public URL (omit with --probe).")
     parser.add_argument("--output", help="Output working directory.")
     parser.add_argument("--backend-mode", default="auto",
-                        choices=["auto", "local", "cloud"],
-                        help="auto: local v1 → local legacy → cloud.")
+                        choices=["auto", "native", "local", "cloud"],
+                        help="auto: native → local v1 → local legacy → cloud.")
+    parser.add_argument("--native-dpi", type=int, default=200,
+                        help="Native figure-crop DPI (default 200).")
+    parser.add_argument("--native-no-figures", action="store_true",
+                        help="Native backend: skip page rendering/figure crops.")
+    parser.add_argument("--no-native", action="store_true",
+                        help="Skip the native backend even under auto "
+                             "(force MinerU/local/cloud).")
+    parser.add_argument("--native-table-strategy", default="lines",
+                        choices=["lines", "text"],
+                        help="Native pdfplumber table strategy (default lines).")
     parser.add_argument("--local-api", default="auto",
                         choices=["auto", "v1", "legacy"],
                         help="Local API flavour (default auto: v1 then legacy).")
@@ -528,7 +571,14 @@ def parse_args() -> argparse.Namespace:
 
 def probe(base_url: str) -> int:
     base = base_url.rstrip("/")
-    result = {"local": {}, "cloud": {}}
+    result = {"local": {}, "cloud": {}, "native": {}}
+    for module in ("pdfplumber", "pypdfium2"):
+        try:
+            import importlib.util
+            found = importlib.util.find_spec(module) is not None
+        except Exception:  # noqa: BLE001
+            found = False
+        result["native"][module] = found
     for path in ("/v1/health", "/docs", "/openapi.json"):
         try:
             with urllib.request.urlopen(base + path, timeout=5) as response:
@@ -543,7 +593,8 @@ def probe(base_url: str) -> int:
     }
     print(json.dumps(result, ensure_ascii=False, indent=2))
     local_ok = "http" in result["local"]
-    return 0 if (local_ok or token) else 1
+    native_ok = result["native"].get("pdfplumber", False)
+    return 0 if (native_ok or local_ok or token) else 1
 
 
 def main() -> int:
@@ -552,6 +603,10 @@ def main() -> int:
         return probe(args.base_url)
     if not args.input or not args.output:
         print("input and --output are required (or use --probe)",
+              file=sys.stderr)
+        return 2
+    if args.no_native and args.backend_mode == "native":
+        print("--no-native conflicts with --backend-mode native",
               file=sys.stderr)
         return 2
     output_dir = pathlib.Path(args.output).expanduser().resolve()
@@ -565,15 +620,34 @@ def main() -> int:
     else:
         file_path = None
 
-    if is_url(input_value) and args.backend_mode in ("local", "auto"):
-        print("[local] URL input needs cloud backend; a local PDF path is "
-              "required for local parsing.", file=sys.stderr)
-        if args.backend_mode == "local":
+    if is_url(input_value) and args.backend_mode in ("local", "auto", "native"):
+        print("[local/native] URL input needs cloud backend; a local PDF path "
+              "is required for local or native parsing.", file=sys.stderr)
+        if args.backend_mode in ("local", "native"):
             return 1
 
     manifest = None
     errors = []
-    if file_path and args.backend_mode in ("auto", "local"):
+    if file_path and not args.no_native and args.backend_mode in ("auto", "native"):
+        try:
+            manifest = native_convert(
+                file_path, output_dir, dpi=args.native_dpi,
+                figures=not args.native_no_figures,
+                table_strategy=args.native_table_strategy)
+            print("[native] extracted text/tables without MinerU",
+                  file=sys.stderr)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"native: {exc}")
+            print(f"[native] unavailable ({exc})", file=sys.stderr)
+        if manifest is None and args.backend_mode == "native":
+            print("Native PDF extraction failed.", file=sys.stderr)
+            (output_dir / "mineru_manifest.json").write_text(
+                json.dumps({"error": "native conversion failed",
+                            "details": errors}, ensure_ascii=False, indent=2),
+                encoding="utf-8")
+            return 1
+
+    if manifest is None and file_path and args.backend_mode in ("auto", "local"):
         order = ([args.local_api] if args.local_api != "auto"
                  else ["v1", "legacy"])
         for flavour in order:

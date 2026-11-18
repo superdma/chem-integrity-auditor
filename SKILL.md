@@ -77,9 +77,10 @@ Read the relevant reference **before** executing its track, not after.
 
 | Script | Purpose |
 |---|---|
-| `scripts/mineru_convert.py` | PDF → `full.md`; local MinerU 4.x v1 task API → local 2.x/3.x legacy `/file_parse` → official cloud v4 (`MINERU_API_TOKEN`); `--probe` checks availability. See `references/09-mineru-setup.md` |
+| `scripts/mineru_convert.py` | PDF → `full.md`; **native PDF first** (pdfplumber text/ruled tables + pypdfium2 figure crops, no MinerU), then local MinerU 4.x v1 → local 2.x/3.x legacy `/file_parse` → official cloud v4 (`MINERU_API_TOKEN`); `--probe` checks availability. See `references/09-mineru-setup.md` |
+| `scripts/pdf_native_extract.py` | standalone native PDF extractor: `full.md`, `tables.json` (page + bbox + cell matrix), `figures.json` (page + bbox + crop), `native_manifest.json`; no OCR and no chart digitization |
 | `scripts/pmc_fetch.py` | **PMC fallback route** (publisher blocked): NLM eutils fulltext XML → `full.md` (real HTML tables, `[[FIG:…]]` anchors) + original figure files from PMC's `instance/<id>/bin/` endpoint with pacing/retry. Use when the publisher site is Cloudflare-gated but the article is in PubMed Central. |
-| `scripts/build_evidence_ledger.py` | MinerU workdir → `evidence_ledger.json` (text/table/figure/caption provenance index) |
+| `scripts/build_evidence_ledger.py` | workdir → `evidence_ledger.json` (text/table/figure/caption provenance index) |
 | `scripts/numeric_forensics.py` | generic numeric leads: exact duplicates, repeated decimals, terminal digits, Benford (applicability-gated) |
 | `scripts/chem_numeric.py` | chemistry-specific numeric leads: yield roundness, conversion×selectivity, area% sums, CHN vs formula, HRMS vs formula MW, Scherrer consistency, identical replicates, impossible unit ranges, neat decimals, fixed-offset rows — each with line-level provenance + candidate benign explanation |
 | `scripts/nmr_hrms_numeric.py` | NMR/HRMS-specific leads: 1H integration non-integer/sum vs formula H, 13C signal count vs formula C, impossible/duplicate 13C shifts, RDBE, nitrogen rule, reported M+1/M+2 vs natural-abundance isotope pattern |
@@ -94,9 +95,11 @@ Read the relevant reference **before** executing its track, not after.
 | `scripts/spectral_segment_dup.py` | **within-trace / between-trace segment reuse**: sliding full-height patch NCC for the retraction charge "a segment of the curve is identical", plus a profile-Pearson fallback |
 | `scripts/calibrate_image_thresholds.py` | labelled pair manifest → ROC/AUC/Youden threshold per metric (dHash, ORB, curve_r, noise); replaces inherited one-case thresholds with a measured calibration |
 | `scripts/report_gate.py` | executable report quality gate: required sections, Level 2+ fields and resolvable locators, no placeholders, no verdict words outside a notice/caveat, track statuses, checked section-7 list |
-| `scripts/check_env.py` | pre-run environment check: Python, Pillow/numpy/cv2/scipy/RDKit, poppler, MinerU env vars (presence only) |
+| `scripts/check_env.py` | pre-run environment check: Python, Pillow/numpy/cv2/scipy/pdfplumber/RDKit, poppler, MinerU env vars (presence only) |
 | `scripts/reference_spectrum_match.py` | digitize a spectrum panel (2-point axis calibration) or read a peak table, then match against SDBS/NMRShiftDB peak lists with tolerance + recall/precision scoring; semi-automatic copied-database-spectrum check |
-| `scripts/render_evidence_tables.py` | deterministic annotated PNG evidence cards for high-risk table findings |
+| `scripts/render_evidence_tables.py` | deterministic annotated PNG evidence cards for high-risk XLSX table findings |
+| `scripts/render_pdf_table_evidence.py` | PDF table → PNG evidence card with row/column highlighting (`--rows`, `--cols`) and a manifest |
+| `scripts/report_cards.py` | parse the Markdown report into hero metadata, findings index and evidence cards (used by the PDF renderer) |
 | `scripts/report_figures.py` | annotated source page/figure with a red problem box plus an enlarged crop, for the report's evidence-image blocks |
 
 All scripts are stdlib, Pillow/NumPy/OpenCV, with SciPy optional; the XLSX
@@ -136,9 +139,11 @@ version/source, panel counts. The manifest is the audit's own audit trail.
 **Route A (article PDF available)** — the documented pipeline:
 
 ```bash
-# 1) Markdown (tables, captions, all numeric claims) — local MinerU first
-# backend auto: local 4.x v1 → local 2.x/3.x legacy → cloud (if token set)
+# 1) Markdown (tables, captions, all numeric claims)
+# backend auto: native PDF → local 4.x v1 → local 2.x/3.x legacy → cloud
 python3 <skill>/scripts/mineru_convert.py "$RUN/paper.pdf" --output "$RUN/workdir"
+# Native PDF needs pdfplumber (+ pypdfium2 for figure crops). If the PDF is
+# scanned or its tables are not extractable, auto falls through to MinerU.
 # CPU-only local server: add --tier flash (or basic); see 09-mineru-setup.md
 
 # 2) Panels (image track ground truth) — poppler, NOT MinerU
@@ -337,8 +342,9 @@ python3 <skill>/scripts/report_figures.py --id <short-id> \
 
 The script writes `<id>_source.png`, `<id>_crop.png`, and
 `<id>_manifest.json`; `--md-out` can also emit the Markdown block. For table
-findings, use `render_evidence_tables.py` when the source XLSX exists;
-otherwise keep the Markdown table and say so in the caption. If the source
+findings, use `render_evidence_tables.py` when the source XLSX exists, or
+`render_pdf_table_evidence.py --rows … --cols …` when the table lives in the
+PDF; otherwise keep the Markdown table and say so in the caption. If the source
 is a PMC figure, write "PMC 图件，无页码" rather than inventing a page
 number.
 
@@ -355,7 +361,9 @@ every Level ≥ 2 finding, its `证据图` block with a resolving image path,
 resolvable locators, unformatted chemical formulas (MgCo2O4 / 2p3/2 /
 Co3+), placeholders, verdict words outside a quoted notice, track statuses,
 and the section-7 checklist. Then render the delivery PDF (A4, evidence
-figures inline):
+figures inline). The default `--layout cards` produces a paper header with
+risk badges, a findings index, and one evidence card per finding; use
+`--layout classic` only for an older plain-Markdown look:
 
 ```bash
 python3 <skill>/scripts/render_report_pdf.py "$RUN/audit_report.md" \

@@ -42,7 +42,7 @@
 
 ## 快速开始
 
-安装需要 Node.js 18+；运行需要 Python 3.8+、Pillow、NumPy、OpenCV，poppler 负责 PDF 栅格化；Chrome/Chromium 可选，用于生成 A4 PDF 报告。
+安装需要 Node.js 18+；运行需要 Python 3.8+、Pillow、NumPy、OpenCV，poppler 负责 PDF 栅格化；`pdfplumber` + `pypdfium2` 用于原生 PDF 解析（不依赖 MinerU）；Chrome/Chromium 可选，用于生成 A4 PDF 报告。
 
 ```bash
 # 1. 安装 skill
@@ -59,7 +59,7 @@ sudo apt-get install poppler-utils   # Debian / Ubuntu
 python3 ~/.claude/skills/chem-integrity-auditor/scripts/check_env.py
 ```
 
-`check_env.py` 输出 `Overall: OK` 后，如果审计本地 PDF/DOI，还需配置本地 MinerU 地址或云端 token，见下方 [MinerU 配置](#mineru-配置pdfdoi-路线二选一)。然后，在 Agent 对话里直接说：
+`check_env.py` 输出 `Overall: OK` 后即可审计本地 PDF：默认走原生 PDF 解析（`pdfplumber` + `pypdfium2`），不需要 MinerU 地址或 token。只有扫描版/复杂表格需要回退 MinerU 时，才配置下方 [MinerU 配置](#mineru-配置可选回退二选一)。然后，在 Agent 对话里直接说：
 
 ```text
 用 chem-integrity-auditor 审计 /path/to/paper.pdf
@@ -85,7 +85,7 @@ output/chem-integrity-auditor/<slug>/<timestamp>/
 
 ### Windows 使用说明
 
-**推荐用 WSL2（Ubuntu）跑完整流程**，bash 示例、`tests/smoketest.sh`、poppler 和 MinerU Docker 都能按 Linux 文档直接使用。
+**推荐用 WSL2（Ubuntu）跑完整流程**，bash 示例、`tests/smoketest.sh`、poppler、原生 PDF 依赖和 MinerU Docker 都能按 Linux 文档直接使用。
 
 原生 Windows PowerShell 也能运行核心 Python 脚本，但需要按下面调整：
 
@@ -108,7 +108,7 @@ output/chem-integrity-auditor/<slug>/<timestamp>/
      --chrome "C:\Program Files\Google\Chrome\Application\chrome.exe"
    ```
 
-4. **MinerU**：本地服务用 Docker Desktop/WSL，或使用云端 token。PowerShell 设置环境变量：
+4. **MinerU（可选回退）**：原生 PDF 解析不需要它；本地服务用 Docker Desktop/WSL，或使用云端 token。PowerShell 设置环境变量：
    ```powershell
    $env:MINERU_BASE_URL = "http://127.0.0.1:8000"
    # 或
@@ -215,14 +215,15 @@ bash tests/smoketest.sh                # 必须 0 failures
 
 - Python 3.8+；Pillow、NumPy、OpenCV、SciPy。
 - RDKit 可选，用于结构与分子式交叉校验；openpyxl 可选，用于 XLSX 表格证据图（`pip install openpyxl`）。
-- MinerU 可选。只有 PDF/DOI 路线的正文与 SI 解析需要它；PMC 路线用 `pmc_fetch.py`，不需要 MinerU。本地 4.x、2.x-3.x 与官方云 v4 都支持，见 [`references/09-mineru-setup.md`](references/09-mineru-setup.md)。
+- **原生 PDF 解析是默认路线**：`pdfplumber` 抽取正文与有框线表格，`pypdfium2` 渲染/裁剪图件；不需要 MinerU 服务或 token。扫描版 PDF、无框线复杂表或提取不到文字时，`--backend-mode auto` 会自动回退 MinerU。
+- MinerU 现在是可选回退。PDF/DOI 路线的正文与 SI 解析可用本地 4.x、2.x-3.x 或官方云 v4；PMC 路线用 `pmc_fetch.py`，两者都不需要。见 [`references/09-mineru-setup.md`](references/09-mineru-setup.md)。
 - Token 只从环境变量读取（`MINERU_API_TOKEN` / `MINERU_API_KEY`），不会写进仓库、报告或 manifest。
 
-#### MinerU 配置（PDF/DOI 路线二选一）
+#### MinerU 配置（可选回退，二选一）
 
-审计本地 PDF 或 DOI 时，必须先让 `mineru_convert.py` 找到可用的 MinerU。**本地服务和官方云任选其一**；只走 PMC 路线则不需要配置。
+原生 PDF 解析不需要 MinerU。只有扫描版 PDF、无框线复杂表，或你显式使用 `--backend-mode local|cloud` 时，才需要配置。**本地服务和官方云任选其一**；只走 PMC 路线也不需要。
 
-**方案 A：本地 MinerU 服务（推荐，离线）**
+**方案 A：本地 MinerU 服务（离线回退）**
 
 ```bash
 # 1) 启动本地 MinerU 4.x（Docker 示例；已有服务可跳过）
@@ -271,7 +272,7 @@ set -a
 set +a
 ```
 
-`check_env.py` 会显示 `MINERU_API_TOKEN`、`MINERU_API_KEY` 是否已设置。两者都没有时，`--backend-mode auto` 只会尝试本地服务；本地也没有时，PDF/DOI 路线无法解析，请改用 PMC 路线或先提供已解析的 `full.md`。
+`check_env.py` 会显示 `MINERU_API_TOKEN`、`MINERU_API_KEY` 是否已设置。两者都没有时，`--backend-mode auto` 仍会先用原生 PDF 解析；原生失败才尝试本地服务。原生和本地都不可用时，PDF/DOI 路线无法解析，请改用 PMC 路线或先提供已解析的 `full.md`。
 
 ### 更新与卸载
 
@@ -316,26 +317,28 @@ flowchart LR
 
 | 阶段 | 脚本 |
 |---|---|
-| 解析 | `mineru_convert.py`、`pmc_fetch.py`、`build_evidence_ledger.py` |
+| 解析 | `mineru_convert.py`（原生优先）、`pdf_native_extract.py`、`pmc_fetch.py`、`build_evidence_ledger.py` |
 | 数值 | `chem_numeric.py`、`numeric_forensics.py`、`nmr_hrms_numeric.py` |
 | 结构 | `structure_check.py` |
 | 图像 | `panel_split.py`、`stack_split.py`、`offset_stack_split.py`、`image_dup.py`、`image_dup_orb.py`、`spectral_noise_fingerprint.py`、`spectral_segment_dup.py` |
 | 参考谱 | `reference_spectrum_match.py` |
 | 图库 | `corpus_add.py`、`corpus_match.py` |
-| 阈值与门禁 | `calibrate_image_thresholds.py`、`report_gate.py`、`report_figures.py`、`render_report_pdf.py`、`check_env.py` |
+| 阈值与门禁 | `calibrate_image_thresholds.py`、`report_gate.py`、`report_figures.py`、`render_pdf_table_evidence.py`、`render_report_pdf.py`、`check_env.py` |
 
 <details>
 <summary>完整脚本说明</summary>
 
 | 脚本 | 作用 |
 |---|---|
-| `mineru_convert.py` | PDF → `full.md`；local v1 / local legacy / cloud v4 |
+| `mineru_convert.py` | PDF → `full.md`；native PDF → local v1 / local legacy / cloud v4 |
 | `pmc_fetch.py` | PMC 全文 XML + 原始 figure 文件 → `full.md` |
 | `build_evidence_ledger.py` | 文本、HTML 表、图、caption 的 cell 级 provenance 索引 |
 | `chem_numeric.py` | 化学数值异常线索 |
 | `numeric_forensics.py` | 通用数值取证：完全重复、重复小数尾、末位数字、Benford 适用性门控 |
 | `nmr_hrms_numeric.py` | NMR 积分、13C 峰数、HRMS 同位素与 RDBE 线索 |
 | `render_evidence_tables.py` | 可选：从原始 XLSX 单元格生成带高亮的表格证据 PNG |
+| `pdf_native_extract.py` | 原生 PDF 抽取：正文、表格坐标/单元格、图件裁剪与 manifest（无需 MinerU） |
+| `report_cards.py` | 解析 Markdown 报告为结论徽章、发现索引和证据卡 |
 | `structure_check.py` | PubChem 结构身份核验（离线缓存） |
 | `panel_split.py` | 多线索面板切分（白沟、框架线、内容带） |
 | `stack_split.py` | 按全宽分隔线切 stacked traces |
@@ -347,7 +350,8 @@ flowchart LR
 | `reference_spectrum_match.py` | 峰表或谱图 vs SDBS/NMRShiftDB 峰表 |
 | `calibrate_image_thresholds.py` | 标注对 → ROC/AUC/Youden 阈值标定 |
 | `report_gate.py` | 可执行报告质量门（章节、Level 2+ 定位与证据图、禁用结论词） |
-| `render_report_pdf.py` | Markdown 审计报告 → A4 PDF；图片内嵌、表格保留、可选页码 |
+| `render_report_pdf.py` | Markdown 审计报告 → A4 PDF；默认卡片式（结论徽章 + 发现索引 + 证据卡），图片内嵌、表格保留、可选页码；`--layout classic` 保留旧版式 |
+| `render_pdf_table_evidence.py` | PDF 表格 → 带行列高亮的 PNG 证据卡 + manifest |
 | `check_env.py` | 环境自检 |
 
 </details>
@@ -361,7 +365,7 @@ python3 tests/make_fixtures.py
 bash tests/smoketest.sh
 ```
 
-当前基线是 76 项通过、0 失败（无 Chrome/Chromium 时 PDF 用例显示 SKIP，其余 75 项通过）。fresh clone 首次运行会多一项 fixture 生成检查。范围包括所有脚本的编译与 `--help`、数值正负对照、PubChem 离线缓存、参考谱匹配、图像复用、谱图指纹、面板/stack/offset 切分、片段复用、阈值标定、跨论文图库、报告质量门、报告证据图、A4 PDF 渲染，以及 MinerU 三后端 mock 和 auto fallback。
+当前基线是 84 项通过、0 失败（无 Chrome/Chromium 时 PDF 用例显示 SKIP，其余 83 项通过）。fresh clone 首次运行会多一项 fixture 生成检查。范围包括所有脚本的编译与 `--help`、数值正负对照、PubChem 离线缓存、参考谱匹配、图像复用、谱图指纹、面板/stack/offset 切分、片段复用、阈值标定、跨论文图库、报告质量门、报告证据图、卡片式 A4 PDF 渲染、原生 PDF 抽取，以及 MinerU 三后端 mock 和 auto fallback。
 
 `tests/gold/` 保存了 5 篇真实撤稿论文的逐条指控复盘：
 
@@ -394,7 +398,16 @@ python3 scripts/report_gate.py output/.../audit_report.md \
   --run-dir output/.../workdir --json report_gate.json --strict
 
 python3 scripts/render_report_pdf.py output/.../audit_report.md \
-  --output output/.../audit_report.pdf
+  --output output/.../audit_report.pdf --keep-html
+```
+
+PDF 表格证据可以把问题行列高亮成 PNG，直接放进 `证据图` 块：
+
+```bash
+python3 scripts/render_pdf_table_evidence.py output/.../paper.pdf \
+  --page 7 --table 1 --rows 2-5 --cols 3,5 \
+  --id TAB7-C --output-dir output/.../findings/image \
+  --run-dir output/... --md-out
 ```
 
 `render_report_pdf.py` 需要本机有 Chrome/Chromium；没有时仍交付 Markdown 报告，并在交付说明中注明 PDF 未生成。
@@ -462,6 +475,8 @@ ACKNOWLEDGEMENTS.md      # 第三方依赖、数据源、算法引用与许可�
 | [NumPy](https://numpy.org/) | 数值计算 | BSD-3-Clause |
 | [OpenCV](https://opencv.org/) | ORB、模板匹配、RANSAC | Apache-2.0 |
 | [SciPy](https://scipy.org/) | 可选统计与信号辅助 | BSD-3-Clause |
+| [pdfplumber](https://github.com/jsvine/pdfplumber) | 原生 PDF 文本/表格抽取 | MIT |
+| [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) | 原生 PDF 页面渲染/图件裁剪 | Apache-2.0 / BSD-3-Clause |
 | [RDKit](https://www.rdkit.org/) | 可选结构/分子式校验 | BSD-3-Clause |
 | [openpyxl](https://openpyxl.readthedocs.io/) | 可选 XLSX 表格证据图 | MIT |
 | [Poppler](https://poppler.freedesktop.org/) | `pdftoppm` / `pdfimages` / `pdftotext` | GPL-2.0（独立可执行程序） |

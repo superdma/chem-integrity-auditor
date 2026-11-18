@@ -1,17 +1,21 @@
 # 09 — MinerU backends (local + official cloud)
 
-MinerU is needed **only for the PDF/DOI article route (Route A)** and for
-SI PDFs. The PMC route (Route B, `pmc_fetch.py`) bypasses MinerU entirely:
-PMC's XML already has real tables and figure anchors.
+MinerU is now an **optional fallback** for the PDF/DOI article route
+(Route A) and SI PDFs. The default is the native backend: `pdfplumber` for
+text/ruled tables, `pypdfium2` for figure crops. It needs no MinerU service
+or token. The PMC route (Route B, `pmc_fetch.py`) bypasses both.
 
-`mineru_convert.py` supports three backends, tried in this order under
+`mineru_convert.py` supports four backends, tried in this order under
 `--backend-mode auto`:
 
+0. **Native PDF** — `pdfplumber` + optional `pypdfium2`; no service, no token.
 1. **Local MinerU 4.x** — v1 async task API (`POST /v1/tasks`).
 2. **Local MinerU 2.x/3.x** — legacy synchronous `POST /file_parse`.
 3. **Official cloud** — `https://mineru.net` API v4, token required.
 
-Only the cloud needs a token. Local parsing works offline.
+Only the cloud needs a token. Native and local parsing work offline. If the
+PDF is scanned/image-only, native extraction returns no text and `auto` falls
+through to MinerU; use `--backend-mode native` to force the native path.
 
 ## Quick check
 
@@ -32,7 +36,27 @@ py -3 <skill>\scripts\mineru_convert.py --probe
 For a persistent cloud token, use `setx MINERU_API_TOKEN "..."` and open a
 new terminal; never write the token into the repository.
 
-## Local MinerU 4.x (recommended)
+## Native PDF (default, no MinerU)
+
+```bash
+python3 -m pip install "pdfplumber>=0.11,<0.11.5" pypdfium2
+python3 <skill>/scripts/pdf_native_extract.py paper.pdf --output "$RUN/workdir"
+```
+
+Outputs `full.md`, `tables.json` (page + bbox + cell matrix), `figures.json`
+(page + bbox + crop) and `native_manifest.json`. It does not OCR scanned
+pages and does not digitize chart pixels; when `text_chars == 0` or a table
+is not extractable, rerun with MinerU (`--backend-mode local` or `cloud`).
+For figure crops only, `--dpi 200` is the default; use `--dpi 300` for small
+panels. `--no-figures` skips rendering when only text/tables are needed.
+
+Native extraction is layout-blind: multi-column text, chemical subscripts and
+borderless tables can be less faithful than MinerU. Check `tables.json` and a
+few `full.md` lines before the numeric track; if a chemistry table lost its
+columns, rerun with `--backend-mode local` (or `cloud`) and record the backend
+in `input_manifest.md`.
+
+## Local MinerU 4.x (fallback)
 
 The 4.x `mineru-api` no longer exposes `/file_parse` (it returns 404). The
 v1 flow is: create task → PUT the returned upload URL → poll the task →
@@ -137,8 +161,10 @@ proxy; leave it unset in normal use.
 
 | Mode | Behaviour |
 |---|---|
-| `--backend-mode auto` (default) | local v1 → local legacy → cloud (only if token set) |
-| `--backend-mode local` | local v1 → local legacy; never cloud |
+| `--backend-mode auto` (default) | native PDF → local v1 → local legacy → cloud (only if token set) |
+| `--backend-mode native` | native PDF only; fails on scanned/image-only PDFs |
+| `--no-native` | skip native under `auto` and force MinerU |
+| `--backend-mode local` | local v1 → local legacy; never cloud or native |
 | `--backend-mode cloud` | cloud only |
 | `--local-api v1\|legacy` | restrict the local flavour |
 
@@ -149,6 +175,8 @@ need a local PDF path.
 
 | Symptom | Cause / fix |
 |---|---|
+| native `text_chars: 0` / `no extractable text` | scanned/image-only PDF — rerun with `--backend-mode local` or `cloud`, or OCR first |
+| native `tables: 0` on a paper that has tables | tables are borderless or image-based — try `--native-table-strategy text`, or fall back to MinerU |
 | `HTTP 404: {"detail":"Not Found"}` on `/file_parse` | server is MinerU 4.x — use v1 (auto handles it) |
 | `Device string must not be empty` | CPU host + VLM tier — `--tier flash` or `--tier basic` |
 | `Connection refused` | server not running / wrong `MINERU_BASE_URL` / port mapping |

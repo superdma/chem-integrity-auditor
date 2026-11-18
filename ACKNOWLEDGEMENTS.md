@@ -18,6 +18,8 @@ or inaccurate, please open an issue.
 | **SciPy** | optional statistical/signal helpers | BSD-3-Clause | <https://scipy.org/> |
 | **RDKit** | optional structure/formula cross-check | BSD-3-Clause | <https://www.rdkit.org/> |
 | **openpyxl** | optional XLSX cell-level evidence cards | MIT | <https://openpyxl.readthedocs.io/> |
+| **pdfplumber** | native PDF text/ruled-table extraction | MIT | <https://github.com/jsvine/pdfplumber> |
+| **pypdfium2** | native PDF page rendering for figure crops | Apache-2.0 / BSD-3-Clause | <https://github.com/pypdfium2-team/pypdfium2> |
 
 No source code from these projects is vendored into this repository; they are
 imported as libraries. Their licenses apply to their own code.
@@ -73,6 +75,13 @@ The npm one-command installer, the `agents/` manifest, and the one-page
 [research-integrity-auditor](https://github.com/cylqwe7855-alt/research-integrity-auditor)
 project. The installer and the chemistry-specific checklist here were written
 independently.
+
+The card-based report layout (paper header, findings index, per-finding
+evidence cards, highlighted table cells, image coverage accounting) and the
+“render pages, crop native pixels” evidence workflow were informed by the
+public [paperconan](https://github.com/zixixr/paperconan) project (MIT).
+Implementation here is independent and integrated with the chemistry-specific
+Level/track model; no paperconan code is vendored.
 
 Two scripts, `scripts/numeric_forensics.py` and
 `scripts/render_evidence_tables.py`, also exist byte-for-byte in that public

@@ -332,7 +332,7 @@ echo
 echo "== 18. MinerU auto fallback local→cloud (mock) =="
 MINERU_API_BASE="http://127.0.0.1:$MOCK_PORT" MINERU_API_TOKEN="test-token" \
 "$PYTHON" "$SCRIPTS/mineru_convert.py" "$FIX/mineru/mock.pdf" \
-    --output "$TMP/mu_auto" --backend-mode auto \
+    --output "$TMP/mu_auto" --backend-mode auto --no-native \
     --base-url "http://127.0.0.1:9" \
     --interval 1 --timeout 20 >"$TMP/mu_auto.log" 2>&1
 if [ -f "$TMP/mu_auto/full.md" ] && \
@@ -569,6 +569,39 @@ PYTEST
 else
   echo "  SKIP  report PDF (Chrome/Chromium not found)"
 fi
+
+echo
+echo "== 30. native PDF backend =="
+if "$PYTHON" "$SCRIPTS/pdf_native_extract.py" "$FIX/mineru/mock.pdf" \
+     --output "$TMP/native" --no-figures >/dev/null 2>&1; then
+  if "$PYTHON" - "$TMP/native" <<'PYTEST'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1])
+m = json.load(open(p / "native_manifest.json"))
+assert m["backend"] == "native-pdf", m
+assert m["text_chars"] > 0, m
+assert (p / "full.md").is_file() and (p / "tables.json").is_file(), m
+assert "Mock paper" in (p / "full.md").read_text(encoding="utf-8")
+PYTEST
+  then ok "native text extraction writes full.md + manifest without MinerU"
+  else bad "native PDF outputs invalid"; fi
+else
+  bad "native PDF extraction"
+fi
+
+echo
+echo "== 31. report cards parser =="
+if "$PYTHON" - "$FIX/report/valid.md" "$SCRIPTS" <<'PYTEST'
+import sys
+sys.path.insert(0, sys.argv[2])
+import report_cards
+report = report_cards.parse_report(open(sys.argv[1], encoding="utf-8").read())
+assert report["title"], report
+assert report["findings"], report
+assert report["findings"][0]["level"] == 2, report
+PYTEST
+then ok "report parser extracts title, risk and findings"
+else bad "report parser output"; fi
 
 echo
 echo "======================================"

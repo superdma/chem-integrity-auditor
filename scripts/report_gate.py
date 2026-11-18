@@ -68,11 +68,12 @@ def split_findings(text: str):
             level = int(m.group(1))
         if lines[i].startswith("#### ") and level is not None:
             title = lines[i][5:].strip()
+            block_level = level
             start = i
             j = i + 1
             while j < len(lines) and not lines[j].startswith(("### ", "#### ", "## ")):
                 j += 1
-            out.append((level, title, "\n".join(lines[start:j]), start + 1))
+            out.append((block_level, title, "\n".join(lines[start:j]), start + 1))
             i = j
         else:
             i += 1

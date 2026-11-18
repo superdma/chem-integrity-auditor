@@ -65,10 +65,13 @@ Section discipline:
 1. **报告头部** — paper identity (title, authors, journal, year, DOI),
    status (正常/撤稿/勘误 — with the notice URL if any), audit date, run dir,
    overall risk + one-paragraph summary of the strongest evidence chain.
-2. **审计范围与方法** — what was acquired (manifest summary), MinerU source,
-   panel counts, subfield class, which tracks ran fully / partially / not at
-   all and why. If the retraction-notice checklist applies: one row per
-   charge with 复现/无法复现/Level.
+2. **审计范围与方法** — what was acquired (manifest summary), parsing backend
+   (native PDF via pdfplumber/pypdfium2, or MinerU local/cloud), table count,
+   panel/image-asset counts, subfield class, which tracks ran fully /
+   partially / not at all and why. Add a **覆盖与可复现性** line with
+   reviewed / unresolved / unreadable / deferred image counts and the tool
+   versions. If the retraction-notice checklist applies: one row per charge
+   with 复现/无法复现/Level.
 3. **发现（按 Level 降序）** — each finding: location, observation, why,
   pressure test, needed data. Cite the finding file path. Chemical formulas,
   oxidation states and level labels keep their PDF typography as Unicode:
@@ -89,8 +92,9 @@ Section discipline:
    space; adjacent duplicated panels may share one box. For a PDF source,
    use normalized coordinates and state the page. For a PMC figure, state
    "PMC 图件，无页码" — do not invent a page number. Table findings use
-   `render_evidence_tables.py` when the source XLSX exists; otherwise keep
-   the Markdown table and say the cell image is unavailable. Level 1
+   `render_evidence_tables.py` for XLSX or
+   `render_pdf_table_evidence.py --rows … --cols …` for a PDF table; otherwise
+   keep the Markdown table and say the cell image is unavailable. Level 1
    findings carry an image or a table too; a negative scan (0 copied
    segments) uses a result table, never an invented red box.
 4. **各线小结** — numerical / image / logical: what ran, lead counts,
@@ -119,6 +123,8 @@ Section discipline:
       "高度疑似失实" Level-4 framing)
 - [ ] `_clean.md` / `_inapplicable.md` present for ALL THREE tracks (no
       silent empty directories)
+- [ ] §2 states the parsing backend, table count, and reviewed/unresolved
+      image-asset coverage
 - [ ] manifest lists every artifact examined; nothing graded from a file
       not in the manifest
 - [ ] retraction-notice charges (if any) each have a row in §2

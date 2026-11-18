@@ -22,8 +22,11 @@
 
 - **获取材料**：<文章 PDF / SI 文件 / 高清图 / 撤稿或勘误通知>（详见
   `input_manifest.md`；被 paywall 阻断的来源在此列出）
-- **解析**：<MinerU 版本与来源（本地/云端）>；`full.md` <N> KB；
-  poppler 面板 <N> 张（文章）+ <N> 张（SI）
+- **解析**：<native PDF（pdfplumber + pypdfium2）/ MinerU 版本与来源（本地/云端）>；
+  `full.md` <N> KB；表格 <N> 个；poppler 面板 <N> 张（文章）+ <N> 张（SI）
+- **覆盖与可复现性**：PDF <N> 页；图像资产 <N> 个（reviewed <N> /
+  unresolved <N> / unreadable <N> / deferred <N>）；数值表 <N> 个；
+  工具版本 <…>；`input_manifest.md`、`report_gate.json` 与证据图 manifest 均已保留
 - **子领域分类**：<organic-synthesis / electrochemistry / materials / …>
 - **技术清点**：<N> 幅图已分类（见 `technique_inventory.md`），
   其中 <N> 幅为线谱图（指纹比对池）、<N> 幅为显微图像、<N> 幅示意图
@@ -38,7 +41,7 @@
 
 > 化学式、氧化态和谱线能级一律用 Unicode 上下标：MgCo₂O₄、MgCo₂O₄@ZnS、2p₃/₂、Co³⁺；不要写成 MgCo2O4、2p3/2、Co3+。PDF 里是什么上下标，报告里就保留什么，不把化学式当普通英文单词。
 >
-> 每条发现都要有图像或表格证据。Level ≥ 2 必须有“证据图”块：原页或原图红框 + 局部放大。红框只框问题面板的完整绘图区，包含面板标题和坐标轴标签，不要圈入正文、页眉或无关留白；相邻的重复谱可用一个框覆盖两幅。PDF 来源在图注写“PDF 第 N 页 / 原文 Fig. X”；PMC 图件写“PMC 图件，无页码”。表格发现优先附 `render_evidence_tables.py` 生成的单元格高亮 PNG；没有 XLSX 时保留 Markdown 表，并在图注说明“无原始单元格”。Level 1 的阴性结果（未检出复用、计数为 0）不要伪造红框，用“证据表”列出检查项和结果。
+> 每条发现都要有图像或表格证据。Level ≥ 2 必须有“证据图”块：原页或原图红框 + 局部放大。红框只框问题面板的完整绘图区，包含面板标题和坐标轴标签，不要圈入正文、页眉或无关留白；相邻的重复谱可用一个框覆盖两幅。PDF 来源在图注写“PDF 第 N 页 / 原文 Fig. X”；PMC 图件写“PMC 图件，无页码”。表格发现优先附单元格高亮 PNG：XLSX 用 `render_evidence_tables.py`，PDF 表格用 `render_pdf_table_evidence.py --rows … --cols …`；没有原始表时保留 Markdown 表，并在图注说明“无原始单元格”。Level 1 的阴性结果（未检出复用、计数为 0）不要伪造红框，用“证据表”列出检查项和结果。
 
 ### Level 4 — 高度疑似失实
 
@@ -108,6 +111,7 @@
 - [ ] 已生成 `audit_report.pdf`（A4），证据图随发现内嵌
 - [ ] 报告未将"造假"作为结论（仅引用通知原文或 Level 4 "高度疑似失实"表述）
 - [ ] 三条线均有 clean / inapplicable / 发现 的明确状态
+- [ ] §2 写明解析后端、表格/图像资产数量与 reviewed/unresolved 覆盖
 - [ ] manifest 与已审材料一致
 - [ ] 通知指控逐条核对（如适用）
 - [ ] 原始数据需求清单为各发现之去重并集

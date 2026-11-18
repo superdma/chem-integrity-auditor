@@ -30,6 +30,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+import report_cards
+
 CHROME_CANDIDATES = [
     "google-chrome-stable",
     "google-chrome",
@@ -173,7 +175,10 @@ def render_markdown(text: str, base: Path) -> str:
         if re.match(r"^\s*[-*]\s+", line):
             items = []
             while i < len(lines) and re.match(r"^\s*[-*]\s+", lines[i]):
-                items.append(re.sub(r"^\s*[-*]\s+", "", lines[i]))
+                item = re.sub(r"^\s*[-*]\s+", "", lines[i])
+                item = re.sub(r"^\[[xX]\]\s*", "✓ ", item)
+                item = re.sub(r"^\[\s\]\s*", "☐ ", item)
+                items.append(item)
                 i += 1
             blocks.append("<ul>" + "".join(
                 f"<li>{inline(x, base)}</li>" for x in items) + "</ul>")
@@ -287,11 +292,19 @@ def stamp_page_numbers(pdf: Path) -> bool:
         return False
 
 
-def build_html(markdown_text: str, base: Path, title: str) -> str:
-    body = render_markdown(markdown_text, base)
+def build_html(markdown_text: str, base: Path, title: str,
+               layout: str = "cards") -> str:
+    if layout == "classic":
+        body = render_markdown(markdown_text, base)
+        style = CSS
+    else:
+        report = report_cards.parse_report(markdown_text)
+        body = report_cards.render_cards(
+            report, base, render_markdown, inline, image_data_uri)
+        style = CSS + report_cards.CARDS_CSS
     return (
         '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
-        f"<title>{html.escape(title)}</title><style>{CSS}</style></head>"
+        f"<title>{html.escape(title)}</title><style>{style}</style></head>"
         f"<body>{body}</body></html>"
     )
 
@@ -315,6 +328,9 @@ def main() -> int:
     ap.add_argument("--output", help="output PDF (default: report stem + .pdf)")
     ap.add_argument("--chrome", default="", help="Chrome/Chromium executable")
     ap.add_argument("--title", default="化学论文科研诚信审计报告")
+    ap.add_argument("--layout", default="cards", choices=["cards", "classic"],
+                    help="cards: hero + findings index + evidence cards "
+                         "(default); classic: plain Markdown layout.")
     ap.add_argument("--keep-html", action="store_true",
                     help="keep the intermediate HTML next to the PDF")
     ap.add_argument("--timeout", type=int, default=120,
@@ -337,7 +353,7 @@ def main() -> int:
         else report.with_suffix(".pdf")
     output.parent.mkdir(parents=True, exist_ok=True)
     chrome = find_chrome(args.chrome)
-    doc = build_html(text, report.parent, args.title)
+    doc = build_html(text, report.parent, args.title, layout=args.layout)
 
     with tempfile.TemporaryDirectory(prefix="report-pdf-") as tmp:
         html_path = Path(tmp) / "report.html"

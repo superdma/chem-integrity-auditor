@@ -10,7 +10,7 @@ you need to resume lives in `$RUN/`, never in the conversation.
 | # | Batch | Output written |
 |---|---|---|
 | 1 | Input setup, acquisition (article + SI + figures + retraction notice) | `input_manifest.md`, `paper.pdf`, `supplementary/`, `figures_hires/` |
-| 2 | Parsing: MinerU → poppler panels → ledger | `workdir/full.md`, `workdir/evidence_ledger.json`, `panels/`, manifest update |
+| 2 | Parsing: native PDF (or MinerU fallback) → poppler panels → ledger | `workdir/full.md`, `workdir/evidence_ledger.json`, `panels/`, manifest update |
 | 3 | Triage: subfield class + technique inventory | `paper_class.txt`, `technique_inventory.md` |
 | 4 | Numeric scripts (both) | `workdir/chem_numeric.json`, `workdir/numeric_forensics.json` |
 | 5–7 | Numeric track: verify + write finding files | `findings/numerical/*.md` |
@@ -24,8 +24,10 @@ Batch boundaries are guidance, not law — smaller batches are safer, larger
 ones only when a step is trivial. The rule: **never start a batch whose
 inputs are not yet on disk.**
 
-MinerU backend setup (local 4.x v1, local legacy `/file_parse`, official
-cloud v4) is in `09-mineru-setup.md`. Route B (PMC) skips MinerU. Run
+`mineru_convert.py --backend-mode auto` tries the native PDF backend first
+(pdfplumber + pypdfium2), then local MinerU 4.x v1, local legacy
+`/file_parse`, and official cloud v4. Setup and fallback details are in
+`09-mineru-setup.md`; Route B (PMC) skips both. Run
 `mineru_convert.py --probe` once at the start of Route A and record the
 result in the manifest.
 
