@@ -4,6 +4,18 @@
 
 ### Added
 
+- `source_data_audit.py` — workbook-level screening for XLSX/CSV/TSV:
+  duplicate rows/columns, constant difference/ratio, near-perfect correlation,
+  arithmetic-progression runs, mixed precision, last-digit Mode A/B and
+  repeated decimal tails, with file/sheet/row/column provenance.
+- `image_copy_move.py` — within-one-image ORB self-matching plus RANSAC
+  homography/affine, reporting source/target boxes, displacement, inliers and
+  an optional annotated PNG.
+- `audit_run_manifest.py` — run reproducibility inventory with input SHA-256,
+  dependency versions, evidence counts, per-track coverage and explicit gaps.
+- `report_cards.py` now renders an optional “审计材料与覆盖” panel from
+  `audit_run_manifest.json`; missing tracks are shown as gaps, not clean
+  results.
 - Native PDF backend — `pdf_native_extract.py` uses `pdfplumber` for text and
   ruled tables and `pypdfium2` for figure crops, writing `full.md`,
   `tables.json`, `figures.json` and `native_manifest.json`. `mineru_convert.py

@@ -289,9 +289,9 @@ cd <skills>/chem-integrity-auditor && git pull
 
 | 轨道 | 检查 | 主要脚本 |
 |---|---|---|
-| 数值 | 收率取整、转化率×选择性、CHN 元素分析与分子式、HRMS 精确质量与加合物、Scherrer 晶粒尺寸、重复值、面积归一、不可实现单位与量程、表格重复行 | `chem_numeric.py`、`numeric_forensics.py`、`nmr_hrms_numeric.py` |
+| 数值 | 收率取整、转化率×选择性、CHN 元素分析与分子式、HRMS 精确质量与加合物、Scherrer 晶粒尺寸、重复值、面积归一、不可实现单位与量程、表格重复行；XLSX/CSV 源数据的重复行/列、固定差/比、算术序列、末位数字与小数尾 | `chem_numeric.py`、`numeric_forensics.py`、`nmr_hrms_numeric.py`、`source_data_audit.py` |
 | 结构身份 | name / SMILES / CAS / InChIKey / 分子式 → PubChem；比较分子式、MW、单同位素质量、CHN Calcd/Found、CAS 与新颖性；支持盐、水合物和离线缓存 | `structure_check.py` |
-| 图像 | 面板切分（白沟、框架线、内容带）、dHash/aHash、ORB（旋转/镜像/裁剪 + RANSAC inlier/bbox）、谱图曲线与背景噪声指纹、stacked trace 切分与颜色隔离、单条曲线内部片段复用（patch NCC） | `panel_split.py`、`stack_split.py`、`offset_stack_split.py`、`image_dup.py`、`image_dup_orb.py`、`spectral_noise_fingerprint.py`、`spectral_segment_dup.py` |
+| 图像 | 面板切分（白沟、框架线、内容带）、dHash/aHash、ORB（旋转/镜像/裁剪 + RANSAC inlier/bbox）、单图内部 copy-move、谱图曲线与背景噪声指纹、stacked trace 切分与颜色隔离、单条曲线内部片段复用（patch NCC） | `panel_split.py`、`stack_split.py`、`offset_stack_split.py`、`image_dup.py`、`image_dup_orb.py`、`image_copy_move.py`、`spectral_noise_fingerprint.py`、`spectral_segment_dup.py` |
 | 参考谱 | 论文谱图峰位（两点轴校准）或峰表，与 SDBS/NMRShiftDB 导出的峰表比对；不抓取数据库，只做半自动匹配 | `reference_spectrum_match.py` |
 | 逻辑 | 合成→纯度→结构→性能的 claim chain、缺失对照、表征与结论不匹配、领域合理性 | Agent 与 [`references/05-logic-track.md`](references/05-logic-track.md) |
 
@@ -318,9 +318,9 @@ flowchart LR
 | 阶段 | 脚本 |
 |---|---|
 | 解析 | `mineru_convert.py`（原生优先）、`pdf_native_extract.py`、`pmc_fetch.py`、`build_evidence_ledger.py` |
-| 数值 | `chem_numeric.py`、`numeric_forensics.py`、`nmr_hrms_numeric.py` |
+| 数值 | `chem_numeric.py`、`numeric_forensics.py`、`nmr_hrms_numeric.py`、`source_data_audit.py` |
 | 结构 | `structure_check.py` |
-| 图像 | `panel_split.py`、`stack_split.py`、`offset_stack_split.py`、`image_dup.py`、`image_dup_orb.py`、`spectral_noise_fingerprint.py`、`spectral_segment_dup.py` |
+| 图像 | `panel_split.py`、`stack_split.py`、`offset_stack_split.py`、`image_dup.py`、`image_dup_orb.py`、`image_copy_move.py`、`spectral_noise_fingerprint.py`、`spectral_segment_dup.py` |
 | 参考谱 | `reference_spectrum_match.py` |
 | 图库 | `corpus_add.py`、`corpus_match.py` |
 | 阈值与门禁 | `calibrate_image_thresholds.py`、`report_gate.py`、`report_figures.py`、`render_pdf_table_evidence.py`、`render_report_pdf.py`、`check_env.py` |
@@ -335,10 +335,13 @@ flowchart LR
 | `build_evidence_ledger.py` | 文本、HTML 表、图、caption 的 cell 级 provenance 索引 |
 | `chem_numeric.py` | 化学数值异常线索 |
 | `numeric_forensics.py` | 通用数值取证：完全重复、重复小数尾、末位数字、Benford 适用性门控 |
+| `source_data_audit.py` | XLSX/CSV/TSV 源数据筛查：重复行/列、固定差/比、近完美相关、算术序列、混合精度、末位数字 Mode A/B、重复小数尾 |
+| `image_copy_move.py` | 单图内部 copy-move：ORB 自匹配 + RANSAC，输出源/目标框、位移、inlier 与标注图 |
+| `audit_run_manifest.py` | 运行级复现清单：输入 SHA-256、依赖版本、页/表/图/证据计数、各轨覆盖与缺口 |
 | `nmr_hrms_numeric.py` | NMR 积分、13C 峰数、HRMS 同位素与 RDBE 线索 |
 | `render_evidence_tables.py` | 可选：从原始 XLSX 单元格生成带高亮的表格证据 PNG |
 | `pdf_native_extract.py` | 原生 PDF 抽取：正文、表格坐标/单元格、图件裁剪与 manifest（无需 MinerU） |
-| `report_cards.py` | 解析 Markdown 报告为结论徽章、发现索引和证据卡 |
+| `report_cards.py` | 解析 Markdown 报告为结论徽章、发现索引和证据卡；有 `audit_run_manifest.json` 时自动渲染覆盖面板 |
 | `structure_check.py` | PubChem 结构身份核验（离线缓存） |
 | `panel_split.py` | 多线索面板切分（白沟、框架线、内容带） |
 | `stack_split.py` | 按全宽分隔线切 stacked traces |
@@ -365,7 +368,7 @@ python3 tests/make_fixtures.py
 bash tests/smoketest.sh
 ```
 
-当前基线是 84 项通过、0 失败（无 Chrome/Chromium 时 PDF 用例显示 SKIP，其余 83 项通过）。fresh clone 首次运行会多一项 fixture 生成检查。范围包括所有脚本的编译与 `--help`、数值正负对照、PubChem 离线缓存、参考谱匹配、图像复用、谱图指纹、面板/stack/offset 切分、片段复用、阈值标定、跨论文图库、报告质量门、报告证据图、卡片式 A4 PDF 渲染、原生 PDF 抽取，以及 MinerU 三后端 mock 和 auto fallback。
+当前基线是 94 项通过、0 失败（无 Chrome/Chromium 时 PDF 用例显示 SKIP，其余 93 项通过）。fresh clone 首次运行会多一项 fixture 生成检查。范围包括所有脚本的编译与 `--help`、数值正负对照、PubChem 离线缓存、参考谱匹配、图像复用、谱图指纹、面板/stack/offset 切分、片段复用、阈值标定、跨论文图库、报告质量门、报告证据图、卡片式 A4 PDF 渲染、原生 PDF 抽取、源数据统计筛查、单图 copy-move、运行清单，以及 MinerU 三后端 mock 和 auto fallback。
 
 `tests/gold/` 保存了 5 篇真实撤稿论文的逐条指控复盘：
 
@@ -485,7 +488,7 @@ ACKNOWLEDGEMENTS.md      # 第三方依赖、数据源、算法引用与许可�
 | [SDBS](https://sdbs.db.aist.go.jp/) / [NMRShiftDB](https://nmrshiftdb.nmr.uni-koeln.de/) | 参考谱峰表 | 各自数据库条款；仅人工导出，不抓取 |
 | [Europe PMC](https://europepmc.org/) / PMC | 全文与 figure 获取 | NLM 条款 |
 
-算法与思想参考：dHash/aHash 感知哈希（`imagehash` 社区的公开方法）、ORB（Rublee et al., 2011）、Lowe ratio test（Lowe, 2004）、RANSAC（Fischler & Bolles, 1981）、Benjamini-Hochberg FDR（1995）、Fisher z、Scherrer 方程。
+算法与思想参考：dHash/aHash 感知哈希（`imagehash` 社区的公开方法）、ORB（Rublee et al., 2011）、Lowe ratio test（Lowe, 2004）、RANSAC（Fischler & Bolles, 1981）、Benjamini-Hochberg FDR（1995）、Fisher z、Scherrer 方程。GitHub 同类工具的对比、可借鉴点与暂缓项见 [`docs/github-skill-survey.md`](docs/github-skill-survey.md)。
 
 <a id="contributing"></a>
 

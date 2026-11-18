@@ -81,7 +81,8 @@ Read the relevant reference **before** executing its track, not after.
 | `scripts/pdf_native_extract.py` | standalone native PDF extractor: `full.md`, `tables.json` (page + bbox + cell matrix), `figures.json` (page + bbox + crop), `native_manifest.json`; no OCR and no chart digitization |
 | `scripts/pmc_fetch.py` | **PMC fallback route** (publisher blocked): NLM eutils fulltext XML → `full.md` (real HTML tables, `[[FIG:…]]` anchors) + original figure files from PMC's `instance/<id>/bin/` endpoint with pacing/retry. Use when the publisher site is Cloudflare-gated but the article is in PubMed Central. |
 | `scripts/build_evidence_ledger.py` | workdir → `evidence_ledger.json` (text/table/figure/caption provenance index) |
-| `scripts/numeric_forensics.py` | generic numeric leads: exact duplicates, repeated decimals, terminal digits, Benford (applicability-gated) |
+| `scripts/numeric_forensics.py` | generic numeric leads from parsed Markdown: exact duplicates, repeated decimals, terminal digits, Benford (applicability-gated) |
+| `scripts/source_data_audit.py` | **XLSX/CSV/TSV source-data screening**: duplicate rows/columns, constant difference/ratio, near-perfect correlation, arithmetic-progression runs, mixed precision, last-digit Mode A/B, repeated decimal tails; every lead carries file/sheet/row/column and a benign-explanation note |
 | `scripts/chem_numeric.py` | chemistry-specific numeric leads: yield roundness, conversion×selectivity, area% sums, CHN vs formula, HRMS vs formula MW, Scherrer consistency, identical replicates, impossible unit ranges, neat decimals, fixed-offset rows — each with line-level provenance + candidate benign explanation |
 | `scripts/nmr_hrms_numeric.py` | NMR/HRMS-specific leads: 1H integration non-integer/sum vs formula H, 13C signal count vs formula C, impossible/duplicate 13C shifts, RDBE, nitrogen rule, reported M+1/M+2 vs natural-abundance isotope pattern |
 | `scripts/structure_check.py` | PubChem identity check: name/SMILES/CAS/InChIKey/formula → CID, then formula / MW / exact mass (HRMS adducts) / CHN Calcd+Found / CAS / novelty comparisons; cached, offline-capable, RDKit cross-check |
@@ -91,6 +92,7 @@ Read the relevant reference **before** executing its track, not after.
 | `scripts/corpus_add.py` / `scripts/corpus_match.py` | register manually exported reference figures in a local corpus and match query figures/panels against it (dHash + ORB + RANSAC) for “first published in ref. 1” charges; no scraping |
 | `scripts/image_dup.py` | dHash/aHash perceptual duplicate detection (untransformed reuse) |
 | `scripts/image_dup_orb.py` | ORB feature matching (transformed reuse: rotation/flip/crop/brightness) + RANSAC inliers, inlier ratio, target bbox, `--json` evidence |
+| `scripts/image_copy_move.py` | **within-one-image copy-move**: ORB self-matching + RANSAC homography/affine, source/target bboxes, displacement, annotated PNG; catches a region pasted elsewhere in the same panel |
 | `scripts/spectral_noise_fingerprint.py` | curve-profile + background-noise correlation between two line-plot panels — catches re-plotted / re-labeled / white-point-shifted reuse that hashing misses |
 | `scripts/spectral_segment_dup.py` | **within-trace / between-trace segment reuse**: sliding full-height patch NCC for the retraction charge "a segment of the curve is identical", plus a profile-Pearson fallback |
 | `scripts/calibrate_image_thresholds.py` | labelled pair manifest → ROC/AUC/Youden threshold per metric (dHash, ORB, curve_r, noise); replaces inherited one-case thresholds with a measured calibration |
@@ -99,7 +101,8 @@ Read the relevant reference **before** executing its track, not after.
 | `scripts/reference_spectrum_match.py` | digitize a spectrum panel (2-point axis calibration) or read a peak table, then match against SDBS/NMRShiftDB peak lists with tolerance + recall/precision scoring; semi-automatic copied-database-spectrum check |
 | `scripts/render_evidence_tables.py` | deterministic annotated PNG evidence cards for high-risk XLSX table findings |
 | `scripts/render_pdf_table_evidence.py` | PDF table → PNG evidence card with row/column highlighting (`--rows`, `--cols`) and a manifest |
-| `scripts/report_cards.py` | parse the Markdown report into hero metadata, findings index and evidence cards (used by the PDF renderer) |
+| `scripts/report_cards.py` | parse the Markdown report into hero metadata, findings index and evidence cards (used by the PDF renderer); renders an optional `audit_run_manifest.json` coverage panel |
+| `scripts/audit_run_manifest.py` | run-level reproducibility inventory: input SHA-256, dependency versions, page/table/figure/evidence counts, per-track coverage and explicit gaps |
 | `scripts/report_figures.py` | annotated source page/figure with a red problem box plus an enlarged crop, for the report's evidence-image blocks |
 
 All scripts are stdlib, Pillow/NumPy/OpenCV, with SciPy optional; the XLSX
@@ -213,6 +216,23 @@ python3 <skill>/scripts/structure_check.py --batch "$RUN/workdir/compounds.json"
     --output "$RUN/workdir/structure_check.json"
 ```
 
+**Source-data sub-track** (when the SI ships XLSX/CSV tables): run the
+workbook-level screener before reading the numbers by eye. It works on the
+cell matrix, so it catches row/column copies and trailing-decimal patterns
+that the Markdown-table path cannot see:
+
+```bash
+python3 <skill>/scripts/source_data_audit.py "$RUN/supplementary" \
+    --out "$RUN/workdir/source_data_audit.json" --text
+```
+
+Read every lead with its file/sheet/row/column, then rule out shared
+calibrators, derived columns, unit conversions and technical replicates
+before grading. A constant difference or ratio is not proof by itself; an
+unexplained one in independent measurement columns is a Level 2 candidate.
+`last_digit_mode_b` is specifically the "mixed precision / padded zero"
+pattern; do not apply it to columns that are uniformly recorded at 1 dp.
+
 `compounds.json` keys: `label,name,smiles,cas,inchikey,formula,reported_formula,
 reported_mw,reported_chn,reported_chn_calcd,reported_mz,adduct,reported_cas,
 claim_novel`. Read `references/07-structure-identity.md` before grading —
@@ -249,7 +269,12 @@ manifest; otherwise state that the thresholds are uncalibrated defaults.
    `--traces N` for an automatic proposal). The cut is semi-automatic: a
    faint trace or a label in the gap can move it, and a wrong cut silently
    changes the comparison. Record the chosen cuts in the finding.
-1d. **Cross-publication reuse** (“first published in ref. 1”): register
+1d. **Copy-move within one panel** (a region pasted elsewhere in the same
+   figure): run `image_copy_move.py panel.png --out copy_move.json
+   --annotate marked.png`. ORB self-matching + RANSAC reports the source and
+   target boxes, displacement and inliers; a repeated scale bar, calibration
+   pulse or tiled background is a benign explanation to test.
+1e. **Cross-publication reuse** (“first published in ref. 1”): register
    manually exported reference figures with `corpus_add.py`, then run
    `corpus_match.py --query $RUN/panels --corpus corpus`. A hit carries
    dHash, ORB matches, RANSAC inliers and a bbox. No scraping; ref. figures
@@ -347,6 +372,19 @@ findings, use `render_evidence_tables.py` when the source XLSX exists, or
 PDF; otherwise keep the Markdown table and say so in the caption. If the source
 is a PMC figure, write "PMC 图件，无页码" rather than inventing a page
 number.
+
+Before assembling the report, write the run manifest so the coverage panel
+and the reviewer can see exactly what was inspected:
+
+```bash
+python3 <skill>/scripts/audit_run_manifest.py "$RUN" \
+  --workdir "$RUN/workdir" --out "$RUN/audit_run_manifest.json"
+```
+
+It records input SHA-256 values, tool versions, page/table/figure/evidence
+counts and per-track coverage. A missing track is shown as “缺”, meaning no
+artefact was produced — never as “clean”. When the manifest sits next to
+`audit_report.md`, the card PDF renders it automatically.
 
 Then copy `templates/audit_report.md` to `$RUN/audit_report.md`, fill it
 section by section (Chinese), and run the executable gate before delivering:

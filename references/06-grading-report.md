@@ -108,6 +108,27 @@ Section discipline:
   (Benford gating), anything blocked by paywall.
 7. **质量门自检** — the checklist below, checked.
 
+
+
+## Run manifest and coverage panel
+
+Before assembling the report, inventory the run:
+
+```bash
+python3 <skill>/scripts/audit_run_manifest.py "$RUN" \
+    --workdir "$RUN/workdir" --out "$RUN/audit_run_manifest.json"
+```
+
+The manifest records input SHA-256 values, tool versions, page/table/figure/
+evidence counts, and per-track coverage. Keep it next to `audit_report.md`;
+the card renderer turns it into a compact “审计材料与覆盖” panel and shows
+missing tracks as **缺**. A gap means no artefact was produced for that
+track — it is never evidence that the track was checked and found clean.
+
+Use the gap list in §6 (limitations): “源数据检查缺” and “谱图比对缺” are
+honest scope statements, not failures to hide. When the run is repeated,
+compare the input hashes to confirm the same PDF and supplements were read.
+
 ## Quality gate (run before delivery — all must be true)
 
 - [ ] every Level ≥ 2 finding has a location pointer that resolves to a

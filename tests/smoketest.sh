@@ -603,6 +603,109 @@ PYTEST
 then ok "report parser extracts title, risk and findings"
 else bad "report parser output"; fi
 
+
+echo
+echo "== 32. source-data statistics =="
+mkdir -p "$TMP/source"
+"$PYTHON" - "$TMP/source/data.csv" <<'PYTEST'
+import csv, sys
+rows = [["sample", "a", "b", "c", "d"]]
+for i in range(1, 21):
+    rows.append([f"S{i}", f"{i/100:.2f}", f"{i/100+0.3:.2f}",
+                 f"{2*i/100:.2f}", f"{i/10:.2f}"])
+rows.append(["S21", "0.21", "0.51", "0.42", "2.10"])
+rows.append(["S22", "0.21", "0.51", "0.42", "2.10"])
+with open(sys.argv[1], "w", newline="", encoding="utf-8") as handle:
+    csv.writer(handle).writerows(rows)
+PYTEST
+if "$PYTHON" "$SCRIPTS/source_data_audit.py" "$TMP/source/data.csv" \
+     --out "$TMP/source/audit.json" >/dev/null 2>&1; then
+  if "$PYTHON" - "$TMP/source/audit.json" <<'PYTEST'
+import json, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+checks = {f["check"] for f in d["findings"]}
+assert "duplicate_numeric_row" in checks, checks
+assert "constant_difference" in checks, checks
+assert "constant_ratio" in checks, checks
+assert "arithmetic_progression" in checks, checks
+PYTEST
+  then ok "source-data duplicate/offset/ratio/AP leads fire"
+  else bad "source-data leads missing"; fi
+else
+  bad "source-data audit run"
+fi
+
+echo
+echo "== 33. copy-move detector =="
+mkdir -p "$TMP/copymove"
+"$PYTHON" - "$TMP/copymove" <<'PYTEST'
+import sys
+import cv2
+import numpy as np
+root = sys.argv[1]
+rng = np.random.default_rng(7)
+clean = cv2.GaussianBlur(rng.integers(60, 200, (420, 520), dtype=np.uint8), (3, 3), 0)
+cv2.imwrite(root + "/clean.png", clean)
+patch = clean[40:150, 60:190].copy()
+moved = clean.copy()
+moved[240:350, 300:430] = patch
+cv2.imwrite(root + "/moved.png", moved)
+PYTEST
+if "$PYTHON" "$SCRIPTS/image_copy_move.py" "$TMP/copymove/moved.png" \
+     --out "$TMP/copymove/moved.json" --annotate "$TMP/copymove/moved_annotated.png" >/dev/null 2>&1; then
+  if "$PYTHON" - "$TMP/copymove/moved.json" "$TMP/copymove/moved_annotated.png" <<'PYTEST'
+import json, pathlib, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+assert d["regions"], d
+assert len(d["regions"]) == 1, d["regions"]
+assert d["regions"][0]["inliers"] >= 12, d["regions"][0]
+assert pathlib.Path(sys.argv[2]).is_file()
+PYTEST
+  then ok "pasted region is found once and annotated"
+  else bad "copy-move region invalid"; fi
+else
+  bad "copy-move positive run"
+fi
+if "$PYTHON" "$SCRIPTS/image_copy_move.py" "$TMP/copymove/clean.png" \
+     --out "$TMP/copymove/clean.json" >/dev/null 2>&1; then
+  if "$PYTHON" - "$TMP/copymove/clean.json" <<'PYTEST'
+import json, sys
+assert json.load(open(sys.argv[1], encoding="utf-8"))["regions"] == []
+PYTEST
+  then ok "clean image stays silent"
+  else bad "copy-move false positive on clean image"; fi
+else
+  bad "copy-move clean run"
+fi
+
+echo
+echo "== 34. audit run manifest =="
+mkdir -p "$TMP/run/findings/image"
+printf '%%PDF-1.4\n%% smoke\n' > "$TMP/run/paper.pdf"
+printf '# paper\n' > "$TMP/run/full.md"
+printf '{"tables":[{"id":"t1"}]}' > "$TMP/run/tables.json"
+printf '{"figures":[{"id":"f1"}]}' > "$TMP/run/figures.json"
+printf '{"pages":3}' > "$TMP/run/native_manifest.json"
+printf 'group,value\nA,1\nB,2\n' > "$TMP/run/source.csv"
+printf 'finding\n' > "$TMP/run/findings/image/x.md"
+printf 'png\n' > "$TMP/run/findings/image/x.png"
+if "$PYTHON" "$SCRIPTS/audit_run_manifest.py" "$TMP/run" \
+     --out "$TMP/run/audit_run_manifest.json" >/dev/null 2>&1; then
+  if "$PYTHON" - "$TMP/run/audit_run_manifest.json" <<'PYTEST'
+import json, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+assert d["counts"]["pages"] == 3, d["counts"]
+assert d["counts"]["tables"] == 1 and d["counts"]["figures"] == 1, d["counts"]
+assert d["coverage"]["pdf"] and d["coverage"]["text"], d["coverage"]
+assert d["coverage"]["source_data"] and d["coverage"]["evidence_images"], d["coverage"]
+assert d["inputs"] and len(d["inputs"][0]["sha256"]) == 64, d["inputs"]
+PYTEST
+  then ok "manifest captures counts, coverage and input hashes"
+  else bad "manifest output invalid"; fi
+else
+  bad "audit manifest run"
+fi
+
 echo
 echo "======================================"
 echo "PASS $PASS   FAIL $FAIL"

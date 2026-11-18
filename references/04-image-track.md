@@ -109,6 +109,43 @@ The fallback (no OpenCV) uses high-passed 1D profiles with Fisher-z p-values
 and Benjamini-Hochberg q-values. It is weaker; if OpenCV is missing, install
 it before relying on a negative segment result.
 
+
+
+## Copy-move inside one panel (`image_copy_move.py`)
+
+Phash and pairwise ORB compare different panels. A region pasted elsewhere in
+the *same* panel needs self-matching:
+
+```bash
+python3 <skill>/scripts/image_copy_move.py panels/fig4a.png \
+    --out workdir/copy_move_fig4a.json \
+    --annotate workdir/copy_move_fig4a_marked.png
+```
+
+The script matches ORB descriptors against the same image (excluding the
+keypoint itself), keeps geometrically consistent clusters with a RANSAC
+homography/affine model, then warps the target back onto the source and
+requires pixel agreement (`ncc ≥0.90`, `mean_abs_diff ≤18`). That last check
+is what suppresses repeated axes, labels and similar-looking panels. Output:
+`source_bbox`, `target_bbox`, `displacement`, `inliers`, `mean_residual_px`,
+`ncc`, `mean_abs_diff` and `inlier_fill`. It returns one region per copied
+area, not the same pair twice in both directions.
+
+Reading guide:
+
+| Signal | Reading |
+|---|---|
+| ≥12 inliers, residual ≤2 px, area ≥0.2%, NCC ≥0.90 | candidate copied region; inspect the annotation |
+| inliers 6–11, residual >3 px, or NCC <0.90 | weak/inconclusive; the pixels did not survive warping |
+| `mean_abs_diff` >18 | reject; similar-looking panels and repeated axes are not copies |
+| boxes overlap (IoU >0.30) | same region, not a moved copy — suppressed |
+| repeated scale bar, calibration pulse, tiled background | benign explanation; test before grading |
+
+False positives rise on symmetric objects, regular grids, and images with one
+dominant texture. Always open the annotated PNG and compare the surroundings:
+a real paste usually breaks the local noise/background continuity at the box
+edge. This is pixel evidence, not proof of intent.
+
 ## Threshold calibration (calibrate_image_thresholds.py)
 
 The dHash/ORB/curve thresholds are defaults. To calibrate:

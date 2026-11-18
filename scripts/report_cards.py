@@ -18,6 +18,7 @@ still renders, and the classic Markdown renderer remains available.
 from __future__ import annotations
 
 import html
+import json
 import re
 from pathlib import Path
 
@@ -182,6 +183,62 @@ def parse_report(text: str):
     }
 
 
+def _manifest_panel(base: Path) -> str:
+    """Render an optional audit_run_manifest.json as a coverage strip."""
+    path = base / "audit_run_manifest.json"
+    if not path.is_file():
+        return ""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(data, dict):
+        return ""
+    counts = data.get("counts", {}) or {}
+    coverage = data.get("coverage", {}) or {}
+    labels = {
+        "pdf": "论文 PDF", "text": "全文解析", "tables": "表格抽取",
+        "figures": "图件抽取", "evidence_images": "证据图",
+        "source_data": "源数据", "numeric_report": "数值检查",
+        "image_report": "图像检查", "source_data_report": "源数据检查",
+        "spectrum_report": "谱图比对",
+    }
+    chips = []
+    for key, label in labels.items():
+        present = bool(coverage.get(key))
+        chips.append(
+            f'<span class="cov {"ok" if present else "missing"}">'
+            f'{html.escape(label)} {"✓" if present else "缺"}</span>')
+    cells = [
+        ("页数", counts.get("pages")), ("表格", counts.get("tables")),
+        ("图件资产", counts.get("image_assets")),
+        ("证据图", counts.get("evidence_images")),
+        ("源数据文件", counts.get("source_data_files")),
+        ("findings 文件", counts.get("findings")),
+    ]
+    stats = "".join(
+        f'<div class="stat"><div class="n">{html.escape(str(value if value is not None else "—"))}'
+        f'</div><div class="k">{html.escape(label)}</div></div>'
+        for label, value in cells)
+    inputs = data.get("inputs", []) or []
+    digest = ""
+    if inputs and isinstance(inputs[0], dict):
+        digest = str(inputs[0].get("sha256", ""))[:16]
+    meta = f"{len(inputs)} 份输入材料"
+    if digest:
+        meta += f" · 主输入 SHA-256 {digest}…"
+    gaps = [labels.get(name, name) for name in (data.get("gaps") or [])]
+    gap_html = (f'<div class="cov-gap">未覆盖：{html.escape("、".join(gaps))}'
+                '（缺失表示没有产物，不等于检查为阴性）</div>' if gaps else "")
+    return (
+        '<section class="panel coverage-panel">'
+        '<h2>审计材料与覆盖</h2>'
+        f'<div class="manifest-meta">{html.escape(meta)}</div>'
+        f'<div class="coverage-stats">{stats}</div>'
+        f'<div class="coverage-chips">{"".join(chips)}</div>'
+        f'{gap_html}</section>')
+
+
 def _finish_finding(block, level, index):
     images, kept = _parse_images(block["lines"])
     fields = _parse_fields(kept)
@@ -329,7 +386,8 @@ def render_cards(report: dict, base: Path, render_markdown, inline,
             f'<section class="panel section-{no}">'
             f'<h2>{panel_titles[no]}</h2>{render_markdown(body, base)}</section>')
 
-    return hero + index + "".join(cards) + "".join(panels)
+    coverage = _manifest_panel(base)
+    return hero + coverage + index + "".join(cards) + "".join(panels)
 
 
 CARDS_CSS = r"""
@@ -358,6 +416,20 @@ CARDS_CSS = r"""
 .badge.neutral { color: var(--muted); background: var(--soft); }
 .meta { display:flex; flex-wrap:wrap; gap:2mm 6mm; color:var(--muted);
         font-size:8.6pt; margin: 2mm 0 3mm; }
+.coverage-panel { margin-bottom: 5mm; }
+.manifest-meta { color:var(--muted); font-size:8.2pt; margin-bottom:2mm; }
+.coverage-stats { display:flex; flex-wrap:wrap; gap:3mm; margin:2mm 0; }
+.coverage-stats .stat { min-width:18mm; padding:2mm 3mm; background:var(--soft);
+                        border:0.6pt solid var(--line); border-radius:1.6mm; }
+.coverage-stats .n { font-size:14pt; font-weight:800; line-height:1.1; }
+.coverage-stats .k { color:var(--muted); font-size:7.4pt; }
+.coverage-chips { display:flex; flex-wrap:wrap; gap:1.4mm; margin:2mm 0; }
+.cov { font-size:7.6pt; padding:.5mm 2mm; border-radius:8mm;
+       border:.6pt solid var(--line); background:#fff; }
+.cov.ok { color:#067647; background:#ecfdf3; border-color:#abefc6; }
+.cov.missing { color:#b42318; background:#fef3f2; border-color:#fecdca; }
+.cov-gap { color:#b45309; background:#fffaeb; border:.6pt solid #fedf89;
+           padding:2mm 3mm; border-radius:1.4mm; font-size:8pt; margin-top:2mm; }
 .meta b { color: var(--ink); font-weight: 700; }
 .conclusion { font-size: 10.4pt; line-height: 1.7; }
 .conclusion p { margin: 2mm 0; }

@@ -137,6 +137,37 @@ graded, unless they corroborate another line.
   mark 不适用 and say so in the track summary — a failed Benford on a
   yield table is noise, not evidence.
 
+
+
+## Source-data workbook sub-track (`source_data_audit.py`)
+
+The Markdown path sees the rendered table; the workbook path sees the cell
+matrix. When the SI ships `.xlsx/.csv/.tsv`, run both:
+
+```bash
+python3 <skill>/scripts/source_data_audit.py "$RUN/supplementary" \
+    --out "$RUN/workdir/source_data_audit.json" --text
+```
+
+| Check | Pattern | First benign test |
+|---|---|---|
+| `duplicate_numeric_row` | two rows share ≥4 numeric cells | same condition shown twice? technical-replicate average? |
+| `duplicate_numeric_column` | two columns hold the same values | one is a derived/copy column, or a unit conversion |
+| `constant_difference` | `A − B` is constant across ≥8 rows | designed additive series, baseline subtraction, shared calibrator |
+| `constant_ratio` | `A / B` is constant | normalization, unit conversion, same quantity in two units |
+| `near_perfect_correlation` | Pearson `|r| ≥ 0.99999` | affine-derived column; a real linear calibration can do this |
+| `arithmetic_progression` | ≥4 consecutive values with a fixed step | designed concentration series, time ramp, a generated index |
+| `mixed_precision` | two displayed precisions each ≥10% | instrument exports with mixed formats; otherwise a re-typed column |
+| `last_digit_mode_a` | one non-zero trailing digit ≥20%, χ²≥26.1, n≥50 | bounded-range artefact, rounding to a preferred digit |
+| `last_digit_mode_b` | at max displayed dp: 0-share ≥50%, top digit ≥35%, or ≥50% coarser values, n≥30 | uniformly 1-dp column (then Mode B is inapplicable) |
+| `decimal_tail_2dp/3dp` | ≥8 values spanning ≥6 distinct numbers share a tail | values generated from one formula (e.g. all `100/x`) |
+
+Every output is a **lead**. Open the cited sheet and rows, confirm the header
+and sub-table layout, and write down which benign explanation survived or
+failed. A fixed difference in two *independent measurement* columns with no
+documented derivation is a Level 2 candidate; a single duplicate row can be a
+technical replicate. Do not apply Mode B to a column that is uniformly 1 dp.
+
 ## Track output
 
 - Every surviving anomaly → `findings/numerical/<short-id>.md` (format in

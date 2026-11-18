@@ -89,6 +89,20 @@ project. They come from the authors' shared `paper-fraud-auditor` lineage
 rather than from the 0.5.0 comparison; both repositories are MIT-licensed.
 They are recorded here for transparency.
 
+
+
+The source-data workbook checks (constant-difference/ratio columns,
+near-perfect correlation, duplicate rows, precision and last-digit modes,
+decimal-tail classes) were informed by the public
+[paper-data-integrity-audit](https://github.com/Fengmo997/paper-data-integrity-audit)
+skill and [ai4s-skills integrity-auditor](https://github.com/ai4s-research/ai4s-skills)
+(MIT). The copy-move geometry and the “leads, not verdicts” coverage language
+were informed by those projects and by
+[image-integrity-screen](https://github.com/Sandyyy123/image-integrity-screen)
+(proprietary; consulted for concepts only). No code from those repositories
+is vendored; the implementations here were written independently against
+standard ORB/RANSAC, Pearson-correlation and digit-distribution methods.
+
 ## No LLM SDK
 
 This repository contains **no** `anthropic`, `openai`, or other LLM SDK
