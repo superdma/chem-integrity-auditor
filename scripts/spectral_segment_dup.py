@@ -142,6 +142,11 @@ def patch_matches_between(gray_a: np.ndarray, box_a,
     rb0, rb1, cb0, cb1 = box_b
     sub_a = np.ascontiguousarray(gray_a[ra0:ra1, ca0:ca1], dtype=np.float32)
     sub_b = np.ascontiguousarray(gray_b[rb0:rb1, cb0:cb1], dtype=np.float32)
+    if sub_a.shape[0] != sub_b.shape[0]:
+        # A full-height template from A cannot be slid over a shorter B.
+        # Normalize B to A's plot height; the x-axis is the search axis.
+        sub_b = cv2.resize(sub_b, (sub_b.shape[1], sub_a.shape[0]),
+                           interpolation=cv2.INTER_AREA)
     if sub_a.shape[1] <= window + 2 or sub_b.shape[1] <= window + 2:
         return [], 0
     best = []

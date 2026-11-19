@@ -55,6 +55,9 @@
 
 ### Fixed
 
+- `spectral_segment_dup.py` no longer crashes when two compared plot boxes
+  have different heights; B is resized to A's plot height before the
+  full-height template match.
 - The PDF smoke check no longer assumes a Chinese title is extractable from
   Chrome's PDF on every runner; it normalizes whitespace and accepts a Latin
   marker (`XRD` / `DOI`) as evidence that text was embedded. Chrome also gets
